@@ -1,0 +1,34 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:mocca_go/features/auth/domain/usecases/sign_in_usecase.dart';
+import 'package:mocca_go/features/login/ui/bloc/login_event.dart';
+import 'package:mocca_go/features/login/ui/bloc/login_state.dart';
+
+/// Recibe el evento de login, le pide la sesión a [SignInUseCase] y emite
+/// los estados que dibuja la pantalla.
+class LoginBloc extends Bloc<LoginEvent, LoginState> {
+  final SignInUseCase _signIn;
+
+  LoginBloc(this._signIn) : super(const LoginState()) {
+    on<LoginSubmitted>(_onSubmitted);
+  }
+
+  Future<void> _onSubmitted(
+    LoginSubmitted event,
+    Emitter<LoginState> emit,
+  ) async {
+    emit(state.copyWith(status: LoginStatus.loading));
+    try {
+      final usuario = await _signIn(
+        email: event.email,
+        password: event.password,
+      );
+      emit(state.copyWith(status: LoginStatus.success, usuario: usuario));
+    } on Exception catch (e) {
+      emit(state.copyWith(
+        status: LoginStatus.failure,
+        errorMessage: e.toString(),
+      ));
+    }
+  }
+}
