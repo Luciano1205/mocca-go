@@ -1,30 +1,46 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mocca_go/main.dart';
+import 'package:mocca_go/components/app_input.dart';
+import 'package:mocca_go/components/primary_button.dart';
+import 'package:mocca_go/theme/app_theme.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('El botón muestra su texto y responde al toque', (tester) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildTheme(),
+        home: Scaffold(
+          body: PrimaryButton(label: 'Iniciar sesión', onPressed: () => taps++),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Iniciar sesión'));
+    expect(taps, 1);
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('El campo de contraseña permite mostrar el texto', (tester) async {
+    final controller = TextEditingController();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildTheme(),
+        home: Scaffold(
+          body: AppInput(
+            label: 'Contraseña',
+            hint: 'Tu contraseña',
+            controller: controller,
+            isPassword: true,
+            errorText: 'Correo o contraseña incorrectos.',
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Correo o contraseña incorrectos.'), findsOneWidget);
+    expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+    controller.dispose();
   });
 }
