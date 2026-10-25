@@ -10,13 +10,24 @@ import 'package:mocca_go/features/auth/domain/repository/auth_repository.dart';
 import 'package:mocca_go/features/auth/domain/repository/usuario_repository.dart';
 import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/features/auth/domain/usecases/get_session_usecase.dart';
+import 'package:mocca_go/features/auth/domain/usecases/reset_password_usecase.dart';
+import 'package:mocca_go/features/auth/domain/usecases/send_recovery_code_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/sign_in_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/sign_out_usecase.dart';
+import 'package:mocca_go/features/auth/domain/usecases/sign_up_usecase.dart';
 import 'package:mocca_go/features/common/ui/screens/coming_soon_screen.dart';
 import 'package:mocca_go/features/login/ui/bloc/login_bloc.dart';
 import 'package:mocca_go/features/login/ui/screens/login_screen.dart';
 import 'package:mocca_go/features/panel/ui/bloc/panel_bloc.dart';
 import 'package:mocca_go/features/panel/ui/screens/panel_screen.dart';
+import 'package:mocca_go/features/recovery/ui/bloc/new_password_bloc.dart';
+import 'package:mocca_go/features/recovery/ui/bloc/recover_bloc.dart';
+import 'package:mocca_go/features/recovery/ui/screens/new_password_screen.dart';
+import 'package:mocca_go/features/recovery/ui/screens/recover_screen.dart';
+import 'package:mocca_go/features/register/ui/bloc/register_bloc.dart';
+import 'package:mocca_go/features/register/ui/screens/register_client_screen.dart';
+import 'package:mocca_go/features/register/ui/screens/register_provider_screen.dart';
+import 'package:mocca_go/features/register/ui/screens/register_type_screen.dart';
 import 'package:mocca_go/features/splash/ui/bloc/splash_bloc.dart';
 import 'package:mocca_go/features/splash/ui/bloc/splash_event.dart';
 import 'package:mocca_go/features/splash/ui/screens/splash_screen.dart';
@@ -60,18 +71,39 @@ class App extends StatelessWidget {
       routes: {
         AppRoutes.splash: (_) => BlocProvider(
           create: (_) =>
-              SplashBloc(GetSessionUseCase(auth, usuarios))..add(SplashStarted()),
+              SplashBloc(GetSessionUseCase(auth, usuarios))
+                ..add(SplashStarted()),
           child: const SplashScreen(),
         ),
         AppRoutes.login: (_) => BlocProvider(
           create: (_) => LoginBloc(SignInUseCase(auth, usuarios)),
           child: const LoginScreen(),
         ),
+        AppRoutes.tipoRegistro: (_) => const RegisterTypeScreen(),
+        AppRoutes.registroCliente: (_) => BlocProvider(
+          create: (_) => RegisterBloc(SignUpUseCase(auth)),
+          child: const RegisterClientScreen(),
+        ),
+        AppRoutes.registroDomiciliario: (_) => BlocProvider(
+          create: (_) => RegisterBloc(SignUpUseCase(auth)),
+          child: const RegisterProviderScreen(),
+        ),
+        AppRoutes.recuperar: (_) => BlocProvider(
+          create: (_) => RecoverBloc(SendRecoveryCodeUseCase(auth)),
+          child: const RecoverScreen(),
+        ),
+        AppRoutes.nuevaContrasena: (_) => BlocProvider(
+          create: (_) => NewPasswordBloc(
+            ResetPasswordUseCase(auth),
+            SendRecoveryCodeUseCase(auth),
+          ),
+          child: const NewPasswordScreen(),
+        ),
         AppRoutes.panelCliente: _panel,
         AppRoutes.panelProveedor: _panel,
         AppRoutes.panelSoporte: _panel,
       },
-      // Rutas que aún no existen (registro y recuperación, en construcción).
+      // Rutas que aún no existen.
       onUnknownRoute: (settings) => MaterialPageRoute(
         builder: (_) => ComingSoonScreen(routeName: settings.name ?? ''),
       ),
