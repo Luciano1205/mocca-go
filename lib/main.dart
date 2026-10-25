@@ -12,11 +12,16 @@ import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/features/auth/domain/usecases/get_session_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/sign_in_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/sign_out_usecase.dart';
+import 'package:mocca_go/features/auth/domain/usecases/sign_up_usecase.dart';
 import 'package:mocca_go/features/common/ui/screens/coming_soon_screen.dart';
 import 'package:mocca_go/features/login/ui/bloc/login_bloc.dart';
 import 'package:mocca_go/features/login/ui/screens/login_screen.dart';
 import 'package:mocca_go/features/panel/ui/bloc/panel_bloc.dart';
 import 'package:mocca_go/features/panel/ui/screens/panel_screen.dart';
+import 'package:mocca_go/features/register/ui/bloc/register_bloc.dart';
+import 'package:mocca_go/features/register/ui/screens/register_client_screen.dart';
+import 'package:mocca_go/features/register/ui/screens/register_provider_screen.dart';
+import 'package:mocca_go/features/register/ui/screens/register_type_screen.dart';
 import 'package:mocca_go/features/splash/ui/bloc/splash_bloc.dart';
 import 'package:mocca_go/features/splash/ui/bloc/splash_event.dart';
 import 'package:mocca_go/features/splash/ui/screens/splash_screen.dart';
@@ -60,18 +65,28 @@ class App extends StatelessWidget {
       routes: {
         AppRoutes.splash: (_) => BlocProvider(
           create: (_) =>
-              SplashBloc(GetSessionUseCase(auth, usuarios))..add(SplashStarted()),
+              SplashBloc(GetSessionUseCase(auth, usuarios))
+                ..add(SplashStarted()),
           child: const SplashScreen(),
         ),
         AppRoutes.login: (_) => BlocProvider(
           create: (_) => LoginBloc(SignInUseCase(auth, usuarios)),
           child: const LoginScreen(),
         ),
+        AppRoutes.tipoRegistro: (_) => const RegisterTypeScreen(),
+        AppRoutes.registroCliente: (_) => BlocProvider(
+          create: (_) => RegisterBloc(SignUpUseCase(auth)),
+          child: const RegisterClientScreen(),
+        ),
+        AppRoutes.registroDomiciliario: (_) => BlocProvider(
+          create: (_) => RegisterBloc(SignUpUseCase(auth)),
+          child: const RegisterProviderScreen(),
+        ),
         AppRoutes.panelCliente: _panel,
         AppRoutes.panelProveedor: _panel,
         AppRoutes.panelSoporte: _panel,
       },
-      // Rutas que aún no existen (registro y recuperación, en construcción).
+      // Rutas que aún no existen (recuperación, en construcción).
       onUnknownRoute: (settings) => MaterialPageRoute(
         builder: (_) => ComingSoonScreen(routeName: settings.name ?? ''),
       ),
