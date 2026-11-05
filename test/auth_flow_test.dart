@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/main.dart';
 
+import 'fakes/fake_pedidos.dart';
 import 'fakes/fake_repositories.dart';
 
 void main() {
@@ -19,7 +20,15 @@ void main() {
   }
 
   Future<void> abrirApp(WidgetTester tester) async {
-    await tester.pumpWidget(App(auth: auth, usuarios: usuarios));
+    final catalogo = FakeCatalogoRepository();
+    await tester.pumpWidget(
+      App(
+        auth: auth,
+        usuarios: usuarios,
+        catalogo: catalogo,
+        pedidos: FakePedidoRepository(catalogo),
+      ),
+    );
     // El splash dura al menos 1,5 s.
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
@@ -46,7 +55,7 @@ void main() {
     crearCuenta('andres@icesi.edu.co', Rol.proveedor, nombre: 'Andrés');
     auth.sessionUserId = 'id-andres@icesi.edu.co';
     await abrirApp(tester);
-    expect(find.text('Panel del domiciliario'), findsOneWidget);
+    expect(find.text('Pedidos pendientes'), findsOneWidget);
   });
 
   testWidgets('Login con campos vacíos muestra los errores', (tester) async {
@@ -68,9 +77,11 @@ void main() {
     crearCuenta('laura@icesi.edu.co', Rol.cliente);
     await abrirApp(tester);
     await iniciarSesion(tester, 'laura@icesi.edu.co', '123456');
-    expect(find.text('Panel del cliente'), findsOneWidget);
     expect(find.text('Hola, Laura'), findsOneWidget);
 
+    await tester.tap(find.text('Perfil'));
+    await tester.pumpAndSettle();
+    expect(find.text('Laura'), findsOneWidget);
     await tester.tap(find.text('Cerrar sesión'));
     await tester.pumpAndSettle();
     expect(find.text('Hola de nuevo'), findsOneWidget);
@@ -81,6 +92,6 @@ void main() {
     crearCuenta('andres@icesi.edu.co', Rol.proveedor, nombre: 'Andrés');
     await abrirApp(tester);
     await iniciarSesion(tester, 'andres@icesi.edu.co', '123456');
-    expect(find.text('Panel del domiciliario'), findsOneWidget);
+    expect(find.text('Pedidos pendientes'), findsOneWidget);
   });
 }

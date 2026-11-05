@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/main.dart';
 
+import 'fakes/fake_pedidos.dart';
 import 'fakes/fake_repositories.dart';
 
 void main() {
@@ -11,7 +12,15 @@ void main() {
   late FakeUsuarioRepository usuarios;
 
   Future<void> abrirApp(WidgetTester tester) async {
-    await tester.pumpWidget(App(auth: auth, usuarios: usuarios));
+    final catalogo = FakeCatalogoRepository();
+    await tester.pumpWidget(
+      App(
+        auth: auth,
+        usuarios: usuarios,
+        catalogo: catalogo,
+        pedidos: FakePedidoRepository(catalogo),
+      ),
+    );
     // El splash dura al menos 1,5 s.
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
@@ -157,6 +166,6 @@ void main() {
     await tester.enterText(find.byType(TextField).at(1), '123456');
     await tester.tap(find.text('Iniciar sesión'));
     await tester.pumpAndSettle();
-    expect(find.text('Panel del domiciliario'), findsOneWidget);
+    expect(find.text('Pedidos pendientes'), findsOneWidget);
   });
 }

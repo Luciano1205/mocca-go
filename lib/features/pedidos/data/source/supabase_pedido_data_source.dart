@@ -19,7 +19,7 @@ class SupabasePedidoDataSource {
   // (sin él Supabase responde PGRST201, igual que en el Laboratorio 6).
   static const _columns = 'id, numero, estado, referencia, nota, '
       'subtotal, costo_domicilio, total, creado_en, '
-      'cliente:usuario!cliente_id(nombre), '
+      'cliente:usuario!cliente_id(nombre, calificacion_promedio), '
       'domiciliario:usuario!domiciliario_id(nombre, calificacion_promedio), '
       'zona(nombre), '
       'detalle_pedido(nombre_producto, precio_unitario, cantidad, subtotal), '
@@ -230,6 +230,7 @@ class SupabasePedidoDataSource {
       numero: row['numero'] as int,
       estado: EstadoPedido.desde(row['estado'] as String),
       clienteNombre: (cliente?['nombre'] as String?) ?? '',
+      clienteCalificacion: (cliente?['calificacion_promedio'] as num?)?.toDouble(),
       domiciliarioNombre: domiciliario?['nombre'] as String?,
       domiciliarioCalificacion:
           (domiciliario?['calificacion_promedio'] as num?)?.toDouble(),

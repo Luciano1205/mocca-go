@@ -13,6 +13,10 @@ class AppRoutes {
   static const panelProveedor = '/proveedor';
   static const panelSoporte = '/soporte';
 
+  // Domiciliario: reciben el Pedido como argumento.
+  static const detallePedido = '/proveedor/pedido';
+  static const gestionarPedido = '/proveedor/gestionar';
+
   /// Panel al que entra cada rol después del login o del splash.
   static String panelDe(Rol rol) {
     switch (rol) {

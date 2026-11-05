@@ -54,6 +54,7 @@ class Pedido {
   final int numero;
   final EstadoPedido estado;
   final String clienteNombre;
+  final double? clienteCalificacion;
   final String? domiciliarioNombre;
   final double? domiciliarioCalificacion;
   final String zona;
@@ -74,6 +75,7 @@ class Pedido {
     required this.numero,
     required this.estado,
     required this.clienteNombre,
+    this.clienteCalificacion,
     this.domiciliarioNombre,
     this.domiciliarioCalificacion,
     required this.zona,
@@ -101,6 +103,7 @@ class Pedido {
       numero: numero,
       estado: estado ?? this.estado,
       clienteNombre: clienteNombre,
+      clienteCalificacion: clienteCalificacion,
       domiciliarioNombre: domiciliarioNombre ?? this.domiciliarioNombre,
       domiciliarioCalificacion: domiciliarioCalificacion,
       zona: zona,

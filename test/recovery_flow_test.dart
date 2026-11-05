@@ -5,6 +5,7 @@ import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/features/auth/domain/errors/auth_failure.dart';
 import 'package:mocca_go/main.dart';
 
+import 'fakes/fake_pedidos.dart';
 import 'fakes/fake_repositories.dart';
 
 /// Simula el límite de Supabase: solo deja enviar el código una vez.
@@ -40,7 +41,15 @@ void main() {
   }
 
   Future<void> abrirApp(WidgetTester tester) async {
-    await tester.pumpWidget(App(auth: auth, usuarios: usuarios));
+    final catalogo = FakeCatalogoRepository();
+    await tester.pumpWidget(
+      App(
+        auth: auth,
+        usuarios: usuarios,
+        catalogo: catalogo,
+        pedidos: FakePedidoRepository(catalogo),
+      ),
+    );
     // El splash dura al menos 1,5 s.
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
@@ -161,6 +170,6 @@ void main() {
     await tester.enterText(find.byType(TextField).at(0), email);
     await tester.enterText(find.byType(TextField).at(1), 'nueva123');
     await tocar(tester, 'Iniciar sesión');
-    expect(find.text('Panel del cliente'), findsOneWidget);
+    expect(find.text('Hola, Laura'), findsOneWidget);
   });
 }
