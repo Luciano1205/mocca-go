@@ -15,17 +15,28 @@ import 'package:mocca_go/features/auth/domain/usecases/send_recovery_code_usecas
 import 'package:mocca_go/features/auth/domain/usecases/sign_in_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/sign_out_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/sign_up_usecase.dart';
+import 'package:mocca_go/features/carrito/ui/bloc/carrito_bloc.dart';
+import 'package:mocca_go/features/carrito/ui/screens/carrito_screen.dart';
 import 'package:mocca_go/features/catalogo/data/repository/catalogo_repository_impl.dart';
 import 'package:mocca_go/features/catalogo/data/source/supabase_catalogo_data_source.dart';
 import 'package:mocca_go/features/catalogo/domain/repository/catalogo_repository.dart';
+import 'package:mocca_go/features/catalogo/domain/usecases/get_categorias_usecase.dart';
+import 'package:mocca_go/features/catalogo/domain/usecases/get_entidades_pago_usecase.dart';
+import 'package:mocca_go/features/catalogo/domain/usecases/get_productos_usecase.dart';
+import 'package:mocca_go/features/catalogo/domain/usecases/get_zonas_usecase.dart';
 import 'package:mocca_go/features/common/ui/screens/coming_soon_screen.dart';
+import 'package:mocca_go/features/datos_entrega/ui/bloc/datos_entrega_bloc.dart';
+import 'package:mocca_go/features/datos_entrega/ui/bloc/datos_entrega_event.dart';
+import 'package:mocca_go/features/datos_entrega/ui/screens/datos_entrega_screen.dart';
 import 'package:mocca_go/features/detalle_pedido/ui/bloc/detalle_pedido_bloc.dart';
 import 'package:mocca_go/features/detalle_pedido/ui/screens/detalle_pedido_screen.dart';
 import 'package:mocca_go/features/gestionar_pedido/ui/bloc/gestionar_pedido_bloc.dart';
 import 'package:mocca_go/features/gestionar_pedido/ui/screens/gestionar_pedido_screen.dart';
 import 'package:mocca_go/features/login/ui/bloc/login_bloc.dart';
 import 'package:mocca_go/features/login/ui/screens/login_screen.dart';
+import 'package:mocca_go/features/menu/ui/bloc/menu_bloc.dart';
 import 'package:mocca_go/features/mis_entregas/ui/bloc/mis_entregas_bloc.dart';
+import 'package:mocca_go/features/mis_pedidos/ui/bloc/mis_pedidos_bloc.dart';
 import 'package:mocca_go/features/panel/ui/bloc/panel_bloc.dart';
 import 'package:mocca_go/features/panel/ui/pages/perfil_page.dart';
 import 'package:mocca_go/features/panel/ui/screens/cliente_panel_screen.dart';
@@ -34,8 +45,13 @@ import 'package:mocca_go/features/pedidos/data/repository/pedido_repository_impl
 import 'package:mocca_go/features/pedidos/data/source/supabase_pedido_data_source.dart';
 import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 import 'package:mocca_go/features/pedidos/domain/repository/pedido_repository.dart';
+import 'package:mocca_go/features/pedido_enviado/ui/screens/pedido_enviado_screen.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/avanzar_pedido_usecase.dart';
+import 'package:mocca_go/features/pedidos/domain/usecases/cancelar_pedido_usecase.dart';
+import 'package:mocca_go/features/pedidos/domain/usecases/crear_pedido_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/get_mis_entregas_usecase.dart';
+import 'package:mocca_go/features/pedidos/domain/usecases/get_mis_pedidos_usecase.dart';
+import 'package:mocca_go/features/pedidos/domain/usecases/get_pedido_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/get_pedidos_pendientes_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/tomar_pedido_usecase.dart';
 import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_bloc.dart';
@@ -47,6 +63,10 @@ import 'package:mocca_go/features/register/ui/bloc/register_bloc.dart';
 import 'package:mocca_go/features/register/ui/screens/register_client_screen.dart';
 import 'package:mocca_go/features/register/ui/screens/register_provider_screen.dart';
 import 'package:mocca_go/features/register/ui/screens/register_type_screen.dart';
+import 'package:mocca_go/features/seguimiento/ui/bloc/seguimiento_bloc.dart';
+import 'package:mocca_go/features/seguimiento/ui/bloc/seguimiento_event.dart';
+import 'package:mocca_go/features/seguimiento/ui/screens/detalle_mi_pedido_screen.dart';
+import 'package:mocca_go/features/seguimiento/ui/screens/seguimiento_screen.dart';
 import 'package:mocca_go/features/splash/ui/bloc/splash_bloc.dart';
 import 'package:mocca_go/features/splash/ui/bloc/splash_event.dart';
 import 'package:mocca_go/features/splash/ui/screens/splash_screen.dart';
@@ -92,6 +112,15 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // El carrito va por encima del MaterialApp para que lo compartan
+    // Menú, Carrito y Datos de entrega, que son rutas distintas.
+    return BlocProvider(
+      create: (_) => CarritoBloc(),
+      child: _materialApp(),
+    );
+  }
+
+  Widget _materialApp() {
     return MaterialApp(
       title: 'Mocca Go!',
       debugShowCheckedModeBanner: false,
@@ -128,10 +157,36 @@ class App extends StatelessWidget {
           ),
           child: const NewPasswordScreen(),
         ),
-        AppRoutes.panelCliente: (context) => BlocProvider(
-          create: (_) => PanelBloc(SignOutUseCase(auth)),
+        AppRoutes.panelCliente: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => PanelBloc(SignOutUseCase(auth))),
+            BlocProvider(
+              create: (_) =>
+                  MenuBloc(GetCategoriasUseCase(catalogo), GetProductosUseCase(catalogo)),
+            ),
+            BlocProvider(create: (_) => MisPedidosBloc(GetMisPedidosUseCase(pedidos))),
+          ],
           child: ClientePanelScreen(usuario: _usuario(context)),
         ),
+        AppRoutes.carrito: (_) => const CarritoScreen(),
+        AppRoutes.datosEntrega: (_) => BlocProvider(
+          create: (_) => DatosEntregaBloc(
+            GetZonasUseCase(catalogo),
+            GetEntidadesPagoUseCase(catalogo),
+            CrearPedidoUseCase(pedidos),
+          )..add(DatosEntregaRequested()),
+          child: const DatosEntregaScreen(),
+        ),
+        AppRoutes.pedidoEnviado: (_) => const PedidoEnviadoScreen(),
+        AppRoutes.seguimiento: (context) => BlocProvider(
+          create: (_) => SeguimientoBloc(
+            GetPedidoUseCase(pedidos),
+            CancelarPedidoUseCase(pedidos),
+            _pedido(context),
+          )..add(SeguimientoRequested()),
+          child: const SeguimientoScreen(),
+        ),
+        AppRoutes.detalleMiPedido: (_) => const DetalleMiPedidoScreen(),
         AppRoutes.panelProveedor: (context) => MultiBlocProvider(
           providers: [
             BlocProvider(create: (_) => PanelBloc(SignOutUseCase(auth))),
@@ -173,7 +228,7 @@ class App extends StatelessWidget {
     return ModalRoute.of(context)!.settings.arguments as Usuario;
   }
 
-  /// Detalle y Gestionar reciben el [Pedido] como argumento.
+  /// Seguimiento, Detalle y Gestionar reciben el [Pedido] como argumento.
   Pedido _pedido(BuildContext context) {
     return ModalRoute.of(context)!.settings.arguments as Pedido;
   }

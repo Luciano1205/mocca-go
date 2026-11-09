@@ -13,6 +13,14 @@ class AppRoutes {
   static const panelProveedor = '/proveedor';
   static const panelSoporte = '/soporte';
 
+  // Cliente: el carrito vive en CarritoBloc; Enviado, Seguimiento y
+  // Detalle reciben el Pedido como argumento.
+  static const carrito = '/cliente/carrito';
+  static const datosEntrega = '/cliente/entrega';
+  static const pedidoEnviado = '/cliente/enviado';
+  static const seguimiento = '/cliente/pedido';
+  static const detalleMiPedido = '/cliente/pedido/detalle';
+
   // Domiciliario: reciben el Pedido como argumento.
   static const detallePedido = '/proveedor/pedido';
   static const gestionarPedido = '/proveedor/gestionar';
