@@ -106,7 +106,7 @@ class SupabasePedidoDataSource {
           .from('pedido')
           .select(_columns.replaceFirst('pago(', 'pago!inner('))
           .eq('estado', EstadoPedido.pendiente.valor)
-          .order('creado_en'),
+          .order('creado_en', ascending: true),
     );
   }
 

@@ -17,7 +17,7 @@ class SupabaseCatalogoDataSource {
       final rows = await _client
           .from('categoria')
           .select('id, nombre')
-          .order('orden');
+          .order('orden', ascending: true);
       return rows
           .map((r) => Categoria(id: r['id'] as String, nombre: r['nombre'] as String))
           .toList();
@@ -34,7 +34,7 @@ class SupabaseCatalogoDataSource {
       if (categoriaId != null) {
         query = query.eq('categoria_id', categoriaId);
       }
-      final rows = await query.order('precio');
+      final rows = await query.order('precio', ascending: true);
       return rows.map(_toProducto).toList();
     } on PostgrestException {
       throw const CatalogoFailure('No se pudo cargar el menú.');
@@ -43,7 +43,7 @@ class SupabaseCatalogoDataSource {
 
   Future<List<Zona>> getZonas() async {
     try {
-      final rows = await _client.from('zona').select('id, nombre').order('orden');
+      final rows = await _client.from('zona').select('id, nombre').order('orden', ascending: true);
       return rows
           .map((r) => Zona(id: r['id'] as String, nombre: r['nombre'] as String))
           .toList();
@@ -57,7 +57,7 @@ class SupabaseCatalogoDataSource {
       final rows = await _client
           .from('entidad_pago')
           .select('id, nombre, dato_destino, titular')
-          .order('nombre');
+          .order('nombre', ascending: true);
       return rows
           .map(
             (r) => EntidadPago(
