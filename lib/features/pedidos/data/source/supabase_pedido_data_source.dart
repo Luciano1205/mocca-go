@@ -170,6 +170,49 @@ class SupabasePedidoDataSource {
     }
   }
 
+  // ---------- Tiempo real ----------
+  //
+  // Como en la lección "El Stream viaja por las capas": aquí se crea el
+  // Stream y solo el Bloc lo escucha. `stream()` trae filas sueltas de
+  // `pedido`, sin sus relaciones, así que cada aviso se usa como señal para
+  // volver a hacer la consulta completa (asyncMap). La RLS decide qué filas
+  // llegan, igual que en las consultas normales.
+
+  /// Feed del domiciliario. Escucha toda la tabla (sin filtro por estado):
+  /// un filtro no avisa cuando un pedido deja de cumplirlo, y así es como
+  /// sale del feed cuando otro lo toma.
+  Stream<List<Pedido>> watchPendientes() {
+    return _client
+        .from('pedido')
+        .stream(primaryKey: ['id'])
+        .asyncMap((_) => pendientes());
+  }
+
+  Stream<List<Pedido>> watchMisPedidos({required bool activos}) {
+    return _client
+        .from('pedido')
+        .stream(primaryKey: ['id'])
+        .eq('cliente_id', _uid)
+        .asyncMap((_) => misPedidos(activos: activos));
+  }
+
+  Stream<List<Pedido>> watchMisEntregas({required bool activos}) {
+    return _client
+        .from('pedido')
+        .stream(primaryKey: ['id'])
+        .eq('domiciliario_id', _uid)
+        .asyncMap((_) => misEntregas(activos: activos));
+  }
+
+  /// Un pedido con su detalle, cada vez que cambia (seguimiento y gestión).
+  Stream<Pedido> watchPedido(String pedidoId) {
+    return _client
+        .from('pedido')
+        .stream(primaryKey: ['id'])
+        .eq('id', pedidoId)
+        .asyncMap((_) => getPedido(pedidoId));
+  }
+
   // ---------- Ayudas ----------
 
   Future<String> _insertarPedido(NuevoPedido nuevo) async {

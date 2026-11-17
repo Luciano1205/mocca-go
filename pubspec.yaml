@@ -35,6 +35,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_bloc: ^9.1.1
+  # Fija en la 22, como en el curso: la 23 exige compilar contra Android 17.
+  flutter_local_notifications: ^22.3.3
   supabase_flutter: ^2.18.0
 
 dev_dependencies:

@@ -43,4 +43,20 @@ class PedidoRepositoryImpl implements PedidoRepository {
 
   @override
   Future<Pedido> getPedido(String pedidoId) => _dataSource.getPedido(pedidoId);
+
+  @override
+  Stream<List<Pedido>> watchPendientes() => _dataSource.watchPendientes();
+
+  @override
+  Stream<List<Pedido>> watchMisPedidos({required bool activos}) {
+    return _dataSource.watchMisPedidos(activos: activos);
+  }
+
+  @override
+  Stream<List<Pedido>> watchMisEntregas({required bool activos}) {
+    return _dataSource.watchMisEntregas(activos: activos);
+  }
+
+  @override
+  Stream<Pedido> watchPedido(String pedidoId) => _dataSource.watchPedido(pedidoId);
 }

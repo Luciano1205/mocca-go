@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mocca_go/features/catalogo/domain/entities/categoria.dart';
 import 'package:mocca_go/features/catalogo/domain/entities/entidad_pago.dart';
 import 'package:mocca_go/features/catalogo/domain/entities/producto.dart';
@@ -68,6 +70,19 @@ class FakePedidoRepository implements PedidoRepository {
 
   FakePedidoRepository(this.catalogo);
 
+  /// Hace de Supabase Realtime: avisa cada vez que cambia un pedido.
+  final _cambios = StreamController<void>.broadcast();
+
+  void _avisar() => _cambios.add(null);
+
+  /// Emite el valor actual y otra vez en cada cambio, como `stream()`.
+  Stream<T> _watch<T>(Future<T> Function() consulta) async* {
+    yield await consulta();
+    await for (final _ in _cambios.stream) {
+      yield await consulta();
+    }
+  }
+
   @override
   Future<Pedido> crear(NuevoPedido nuevo) async {
     final items = <ItemPedido>[];
@@ -107,6 +122,7 @@ class FakePedidoRepository implements PedidoRepository {
     );
     clienteDe[id] = usuarioActual;
     domiciliarioDe[id] = null;
+    _avisar();
     return pedidos[id]!;
   }
 
@@ -122,6 +138,7 @@ class FakePedidoRepository implements PedidoRepository {
       return false;
     }
     pedidos[pedidoId] = p.copyWith(estado: EstadoPedido.cancelado);
+    _avisar();
     return true;
   }
 
@@ -143,6 +160,7 @@ class FakePedidoRepository implements PedidoRepository {
       estado: EstadoPedido.aceptado,
       domiciliarioNombre: usuarioActual,
     );
+    _avisar();
     return true;
   }
 
@@ -155,6 +173,7 @@ class FakePedidoRepository implements PedidoRepository {
     final p = pedidos[pedidoId]!;
     if (domiciliarioDe[pedidoId] != usuarioActual || p.estado != actual) return false;
     pedidos[pedidoId] = p.copyWith(estado: nuevo);
+    _avisar();
     return true;
   }
 
@@ -164,4 +183,18 @@ class FakePedidoRepository implements PedidoRepository {
     if (p == null) throw const PedidoFailure('No se pudo cargar el pedido.');
     return p;
   }
+
+  @override
+  Stream<List<Pedido>> watchPendientes() => _watch(pendientes);
+
+  @override
+  Stream<List<Pedido>> watchMisPedidos({required bool activos}) =>
+      _watch(() => misPedidos(activos: activos));
+
+  @override
+  Stream<List<Pedido>> watchMisEntregas({required bool activos}) =>
+      _watch(() => misEntregas(activos: activos));
+
+  @override
+  Stream<Pedido> watchPedido(String pedidoId) => _watch(() => getPedido(pedidoId));
 }

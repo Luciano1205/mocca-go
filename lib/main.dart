@@ -70,6 +70,7 @@ import 'package:mocca_go/features/seguimiento/ui/screens/seguimiento_screen.dart
 import 'package:mocca_go/features/splash/ui/bloc/splash_bloc.dart';
 import 'package:mocca_go/features/splash/ui/bloc/splash_event.dart';
 import 'package:mocca_go/features/splash/ui/screens/splash_screen.dart';
+import 'package:mocca_go/notificaciones/notificaciones_locales.dart';
 import 'package:mocca_go/routes/app_routes.dart';
 import 'package:mocca_go/theme/app_theme.dart';
 
@@ -82,6 +83,7 @@ Future<void> main() async {
     publishableKey: 'sb_publishable_Vk3CvI2i--JVI5aQ4xl-7Q_ue6vf2xi',
   );
   final client = Supabase.instance.client;
+  await NotificacionesLocales.init();
   runApp(
     App(
       auth: AuthRepositoryImpl(SupabaseAuthDataSource(client)),

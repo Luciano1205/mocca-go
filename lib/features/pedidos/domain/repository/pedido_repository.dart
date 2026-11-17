@@ -39,4 +39,16 @@ abstract class PedidoRepository {
 
   /// Un pedido con todo su detalle.
   Future<Pedido> getPedido(String pedidoId);
+
+  // ---------- Tiempo real ----------
+  // Emiten la lista (o el pedido) apenas se escuchan y otra vez en cada
+  // cambio. Solo el Bloc los escucha y cancela la suscripción en close().
+
+  Stream<List<Pedido>> watchPendientes();
+
+  Stream<List<Pedido>> watchMisPedidos({required bool activos});
+
+  Stream<List<Pedido>> watchMisEntregas({required bool activos});
+
+  Stream<Pedido> watchPedido(String pedidoId);
 }
