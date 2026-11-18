@@ -4,12 +4,16 @@ enum MetodoPago { efectivo, transferencia }
 
 /// Una línea del pedido, con el nombre y precio de cuando se pidió.
 class ItemPedido {
+  /// Id de la fila en `detalle_pedido`: el reclamo lo usa para marcar
+  /// qué productos se vieron afectados.
+  final String? id;
   final String nombre;
   final int precioUnitario;
   final int cantidad;
   final int subtotal;
 
   const ItemPedido({
+    this.id,
     required this.nombre,
     required this.precioUnitario,
     required this.cantidad,

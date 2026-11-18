@@ -24,4 +24,12 @@ class CatalogoRepositoryImpl implements CatalogoRepository {
 
   @override
   Future<List<EntidadPago>> getEntidadesPago() => _dataSource.getEntidadesPago();
+
+  @override
+  Future<void> cambiarDisponibilidad(String productoId, {required bool disponible}) {
+    return _dataSource.cambiarDisponibilidad(productoId, disponible: disponible);
+  }
+
+  @override
+  Stream<List<Producto>> watchProductos() => _dataSource.watchProductos();
 }

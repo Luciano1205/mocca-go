@@ -56,6 +56,27 @@ class FakeCatalogoRepository implements CatalogoRepository {
 
   @override
   Future<List<EntidadPago>> getEntidadesPago() async => entidades;
+
+  final _cambios = StreamController<void>.broadcast();
+
+  @override
+  Future<void> cambiarDisponibilidad(String productoId, {required bool disponible}) async {
+    final i = productos.indexWhere((p) => p.id == productoId);
+    final p = productos[i];
+    productos[i] = Producto(
+      id: p.id,
+      categoriaId: p.categoriaId,
+      nombre: p.nombre,
+      descripcion: p.descripcion,
+      precio: p.precio,
+      imagenUrl: p.imagenUrl,
+      disponible: disponible,
+    );
+    _cambios.add(null);
+  }
+
+  @override
+  Stream<List<Producto>> watchProductos() => _escuchar(_cambios, () async => [...productos]);
 }
 
 /// Pedidos en memoria. [usuarioActual] hace de la sesión: cambia de cliente
@@ -76,12 +97,7 @@ class FakePedidoRepository implements PedidoRepository {
   void _avisar() => _cambios.add(null);
 
   /// Emite el valor actual y otra vez en cada cambio, como `stream()`.
-  Stream<T> _watch<T>(Future<T> Function() consulta) async* {
-    yield await consulta();
-    await for (final _ in _cambios.stream) {
-      yield await consulta();
-    }
-  }
+  Stream<T> _watch<T>(Future<T> Function() consulta) => _escuchar(_cambios, consulta);
 
   @override
   Future<Pedido> crear(NuevoPedido nuevo) async {
@@ -91,6 +107,7 @@ class FakePedidoRepository implements PedidoRepository {
       if (!p.disponible) throw PedidoFailure('El producto ${p.nombre} está agotado');
       items.add(
         ItemPedido(
+          id: 'd$_siguiente-${p.id}',
           nombre: p.nombre,
           precioUnitario: p.precio,
           cantidad: linea.cantidad,
@@ -187,14 +204,52 @@ class FakePedidoRepository implements PedidoRepository {
   @override
   Stream<List<Pedido>> watchPendientes() => _watch(pendientes);
 
+  // Como en Supabase, el Stream queda con el usuario que lo abrió.
   @override
-  Stream<List<Pedido>> watchMisPedidos({required bool activos}) =>
-      _watch(() => misPedidos(activos: activos));
+  Stream<List<Pedido>> watchMisPedidos({required bool activos}) {
+    final usuario = usuarioActual;
+    return _watch(
+      () async => pedidos.values
+          .where((p) => clienteDe[p.id] == usuario && p.estado.activo == activos)
+          .toList(),
+    );
+  }
 
   @override
-  Stream<List<Pedido>> watchMisEntregas({required bool activos}) =>
-      _watch(() => misEntregas(activos: activos));
+  Stream<List<Pedido>> watchMisEntregas({required bool activos}) {
+    final usuario = usuarioActual;
+    return _watch(
+      () async => pedidos.values
+          .where((p) => domiciliarioDe[p.id] == usuario && p.estado.activo == activos)
+          .toList(),
+    );
+  }
 
   @override
   Stream<Pedido> watchPedido(String pedidoId) => _watch(() => getPedido(pedidoId));
+}
+
+/// Hace de `stream()` de Supabase: emite el resultado de [consulta] al
+/// escuchar y otra vez con cada aviso de [cambios]. Usa un StreamController
+/// (y no `async*`) para que `cancel()` termine de inmediato.
+Stream<T> _escuchar<T>(StreamController<void> cambios, Future<T> Function() consulta) {
+  late final StreamController<T> controller;
+  StreamSubscription<void>? avisos;
+
+  Future<void> emitir() async {
+    try {
+      controller.add(await consulta());
+    } on Exception catch (e) {
+      controller.addError(e);
+    }
+  }
+
+  controller = StreamController<T>(
+    onListen: () {
+      emitir();
+      avisos = cambios.stream.listen((_) => emitir());
+    },
+    onCancel: () => avisos?.cancel(),
+  );
+  return controller.stream;
 }

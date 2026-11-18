@@ -79,4 +79,22 @@ class FakeUsuarioRepository implements UsuarioRepository {
     if (u == null) throw const AuthFailure('No se pudo cargar tu perfil.');
     return u;
   }
+
+  @override
+  Future<Usuario> actualizarPerfil(
+    String id, {
+    required String nombre,
+    String? descripcion,
+  }) async {
+    final u = await getUsuario(id);
+    return usuarios[id] = Usuario(
+      id: u.id,
+      nombre: nombre,
+      correo: u.correo,
+      rol: u.rol,
+      descripcion: descripcion,
+      calificacionPromedio: u.calificacionPromedio,
+      totalCalificaciones: u.totalCalificaciones,
+    );
+  }
 }

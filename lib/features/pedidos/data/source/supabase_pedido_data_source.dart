@@ -22,7 +22,7 @@ class SupabasePedidoDataSource {
       'cliente:usuario!cliente_id(nombre, calificacion_promedio), '
       'domiciliario:usuario!domiciliario_id(nombre, calificacion_promedio), '
       'zona(nombre), '
-      'detalle_pedido(nombre_producto, precio_unitario, cantidad, subtotal), '
+      'detalle_pedido(id, nombre_producto, precio_unitario, cantidad, subtotal), '
       'pago(metodo, valor_entregado, cambio, '
       'entidad:entidad_pago(nombre, dato_destino, titular)), '
       'historial_estado(estado, fecha)';
@@ -283,6 +283,7 @@ class SupabasePedidoDataSource {
       items: [
         for (final d in detalles.cast<Map<String, dynamic>>())
           ItemPedido(
+            id: d['id'] as String,
             nombre: d['nombre_producto'] as String,
             precioUnitario: d['precio_unitario'] as int,
             cantidad: d['cantidad'] as int,
