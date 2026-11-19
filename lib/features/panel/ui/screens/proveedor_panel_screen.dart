@@ -6,12 +6,14 @@ import 'package:mocca_go/features/mis_entregas/ui/bloc/mis_entregas_bloc.dart';
 import 'package:mocca_go/features/mis_entregas/ui/bloc/mis_entregas_event.dart';
 import 'package:mocca_go/features/mis_entregas/ui/pages/mis_entregas_page.dart';
 import 'package:mocca_go/features/panel/ui/pages/perfil_page.dart';
-import 'package:mocca_go/features/panel/ui/pages/proximamente_page.dart';
 import 'package:mocca_go/features/panel/ui/widgets/panel_tab_bar.dart';
 import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_bloc.dart';
 import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_event.dart';
 import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_state.dart';
 import 'package:mocca_go/features/pendientes/ui/pages/pendientes_page.dart';
+import 'package:mocca_go/features/productos/ui/bloc/productos_bloc.dart';
+import 'package:mocca_go/features/productos/ui/bloc/productos_event.dart';
+import 'package:mocca_go/features/productos/ui/pages/productos_page.dart';
 import 'package:mocca_go/notificaciones/notificaciones_locales.dart';
 import 'package:mocca_go/utils/formato.dart';
 
@@ -30,11 +32,15 @@ class ProveedorPanelScreen extends StatefulWidget {
 class _ProveedorPanelScreenState extends State<ProveedorPanelScreen> {
   int _index = 0;
 
+  /// El perfil puede cambiar en Editar perfil.
+  late Usuario _usuario = widget.usuario;
+
   @override
   void initState() {
     super.initState();
     context.read<PendientesBloc>().add(PendientesStarted());
     context.read<MisEntregasBloc>().add(MisEntregasStarted());
+    context.read<ProductosBloc>().add(ProductosStarted());
   }
 
   void _cambiarPestana(int index) => setState(() => _index = index);
@@ -54,8 +60,11 @@ class _ProveedorPanelScreenState extends State<ProveedorPanelScreen> {
     final pages = [
       const PendientesPage(),
       const MisEntregasPage(),
-      const ProximamentePage(titulo: 'Productos', icono: Icons.coffee_outlined),
-      PerfilPage(usuario: widget.usuario),
+      const ProductosPage(),
+      PerfilPage(
+        usuario: _usuario,
+        onUsuarioActualizado: (u) => setState(() => _usuario = u),
+      ),
     ];
     // El aviso se escucha aquí y no en la pestaña Pedidos, para que llegue
     // aunque el domiciliario esté en otra pestaña.

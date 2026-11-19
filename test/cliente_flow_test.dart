@@ -7,6 +7,7 @@ import 'package:mocca_go/features/pedidos/domain/entities/nuevo_pedido.dart';
 import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 import 'package:mocca_go/main.dart';
 
+import 'fakes/fake_complementos.dart';
 import 'fakes/fake_pedidos.dart';
 import 'fakes/fake_repositories.dart';
 
@@ -15,6 +16,7 @@ void main() {
   late FakeUsuarioRepository usuarios;
   late FakeCatalogoRepository catalogo;
   late FakePedidoRepository pedidos;
+  late FakeCalificacionRepository calificaciones;
   const laura = 'Laura Gómez';
 
   setUp(() {
@@ -22,6 +24,7 @@ void main() {
     usuarios = FakeUsuarioRepository();
     catalogo = FakeCatalogoRepository();
     pedidos = FakePedidoRepository(catalogo);
+    calificaciones = FakeCalificacionRepository();
   });
 
   /// Abre la app con la sesión de Laura (cliente) ya iniciada.
@@ -43,7 +46,14 @@ void main() {
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      App(auth: auth, usuarios: usuarios, catalogo: catalogo, pedidos: pedidos),
+      App(
+        auth: auth,
+        usuarios: usuarios,
+        catalogo: catalogo,
+        pedidos: pedidos,
+        calificaciones: calificaciones,
+        reclamos: FakeReclamoRepository(),
+      ),
     );
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();

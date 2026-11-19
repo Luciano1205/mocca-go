@@ -27,6 +27,9 @@ class ClientePanelScreen extends StatefulWidget {
 class _ClientePanelScreenState extends State<ClientePanelScreen> {
   int _index = 0;
 
+  /// El perfil puede cambiar en Editar perfil.
+  late Usuario _usuario = widget.usuario;
+
   @override
   void initState() {
     super.initState();
@@ -44,9 +47,12 @@ class _ClientePanelScreenState extends State<ClientePanelScreen> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      MenuPage(nombre: widget.usuario.nombre.split(' ').first),
+      MenuPage(nombre: _usuario.nombre.split(' ').first),
       const MisPedidosPage(),
-      PerfilPage(usuario: widget.usuario),
+      PerfilPage(
+        usuario: _usuario,
+        onUsuarioActualizado: (u) => setState(() => _usuario = u),
+      ),
     ];
     return Scaffold(
       body: SafeArea(child: pages[_index]),

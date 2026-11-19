@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/main.dart';
 
+import 'fakes/fake_complementos.dart';
 import 'fakes/fake_pedidos.dart';
 import 'fakes/fake_repositories.dart';
 
@@ -19,6 +20,8 @@ void main() {
         usuarios: usuarios,
         catalogo: catalogo,
         pedidos: FakePedidoRepository(catalogo),
+        calificaciones: FakeCalificacionRepository(),
+        reclamos: FakeReclamoRepository(),
       ),
     );
     // El splash dura al menos 1,5 s.

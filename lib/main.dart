@@ -6,31 +6,42 @@ import 'package:mocca_go/features/auth/data/repository/auth_repository_impl.dart
 import 'package:mocca_go/features/auth/data/repository/usuario_repository_impl.dart';
 import 'package:mocca_go/features/auth/data/source/supabase_auth_data_source.dart';
 import 'package:mocca_go/features/auth/data/source/supabase_usuario_data_source.dart';
+import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/features/auth/domain/repository/auth_repository.dart';
 import 'package:mocca_go/features/auth/domain/repository/usuario_repository.dart';
-import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
+import 'package:mocca_go/features/auth/domain/usecases/actualizar_perfil_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/get_session_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/reset_password_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/send_recovery_code_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/sign_in_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/sign_out_usecase.dart';
 import 'package:mocca_go/features/auth/domain/usecases/sign_up_usecase.dart';
+import 'package:mocca_go/features/calificaciones/data/repository/calificacion_repository_impl.dart';
+import 'package:mocca_go/features/calificaciones/data/source/supabase_calificacion_data_source.dart';
+import 'package:mocca_go/features/calificaciones/domain/repository/calificacion_repository.dart';
+import 'package:mocca_go/features/calificaciones/domain/usecases/calificar_usecase.dart';
+import 'package:mocca_go/features/calificaciones/domain/usecases/get_mi_calificacion_usecase.dart';
 import 'package:mocca_go/features/carrito/ui/bloc/carrito_bloc.dart';
 import 'package:mocca_go/features/carrito/ui/screens/carrito_screen.dart';
 import 'package:mocca_go/features/catalogo/data/repository/catalogo_repository_impl.dart';
 import 'package:mocca_go/features/catalogo/data/source/supabase_catalogo_data_source.dart';
 import 'package:mocca_go/features/catalogo/domain/repository/catalogo_repository.dart';
+import 'package:mocca_go/features/catalogo/domain/usecases/cambiar_disponibilidad_usecase.dart';
 import 'package:mocca_go/features/catalogo/domain/usecases/get_categorias_usecase.dart';
 import 'package:mocca_go/features/catalogo/domain/usecases/get_entidades_pago_usecase.dart';
 import 'package:mocca_go/features/catalogo/domain/usecases/get_productos_usecase.dart';
 import 'package:mocca_go/features/catalogo/domain/usecases/get_zonas_usecase.dart';
+import 'package:mocca_go/features/catalogo/domain/usecases/watch_productos_usecase.dart';
 import 'package:mocca_go/features/common/ui/screens/coming_soon_screen.dart';
 import 'package:mocca_go/features/datos_entrega/ui/bloc/datos_entrega_bloc.dart';
 import 'package:mocca_go/features/datos_entrega/ui/bloc/datos_entrega_event.dart';
 import 'package:mocca_go/features/datos_entrega/ui/screens/datos_entrega_screen.dart';
 import 'package:mocca_go/features/detalle_pedido/ui/bloc/detalle_pedido_bloc.dart';
 import 'package:mocca_go/features/detalle_pedido/ui/screens/detalle_pedido_screen.dart';
+import 'package:mocca_go/features/editar_perfil/ui/bloc/editar_perfil_bloc.dart';
+import 'package:mocca_go/features/editar_perfil/ui/screens/editar_perfil_screen.dart';
 import 'package:mocca_go/features/gestionar_pedido/ui/bloc/gestionar_pedido_bloc.dart';
+import 'package:mocca_go/features/gestionar_pedido/ui/bloc/gestionar_pedido_event.dart';
 import 'package:mocca_go/features/gestionar_pedido/ui/screens/gestionar_pedido_screen.dart';
 import 'package:mocca_go/features/login/ui/bloc/login_bloc.dart';
 import 'package:mocca_go/features/login/ui/screens/login_screen.dart';
@@ -41,11 +52,11 @@ import 'package:mocca_go/features/panel/ui/bloc/panel_bloc.dart';
 import 'package:mocca_go/features/panel/ui/pages/perfil_page.dart';
 import 'package:mocca_go/features/panel/ui/screens/cliente_panel_screen.dart';
 import 'package:mocca_go/features/panel/ui/screens/proveedor_panel_screen.dart';
+import 'package:mocca_go/features/pedido_enviado/ui/screens/pedido_enviado_screen.dart';
 import 'package:mocca_go/features/pedidos/data/repository/pedido_repository_impl.dart';
 import 'package:mocca_go/features/pedidos/data/source/supabase_pedido_data_source.dart';
 import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 import 'package:mocca_go/features/pedidos/domain/repository/pedido_repository.dart';
-import 'package:mocca_go/features/pedido_enviado/ui/screens/pedido_enviado_screen.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/avanzar_pedido_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/cancelar_pedido_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/crear_pedido_usecase.dart';
@@ -55,6 +66,10 @@ import 'package:mocca_go/features/pedidos/domain/usecases/tomar_pedido_usecase.d
 import 'package:mocca_go/features/pedidos/domain/usecases/watch_mis_entregas_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/watch_pedidos_pendientes_usecase.dart';
 import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_bloc.dart';
+import 'package:mocca_go/features/productos/ui/bloc/productos_bloc.dart';
+import 'package:mocca_go/features/reclamos/data/repository/reclamo_repository_impl.dart';
+import 'package:mocca_go/features/reclamos/data/source/supabase_reclamo_data_source.dart';
+import 'package:mocca_go/features/reclamos/domain/repository/reclamo_repository.dart';
 import 'package:mocca_go/features/recovery/ui/bloc/new_password_bloc.dart';
 import 'package:mocca_go/features/recovery/ui/bloc/recover_bloc.dart';
 import 'package:mocca_go/features/recovery/ui/screens/new_password_screen.dart';
@@ -90,6 +105,8 @@ Future<void> main() async {
       usuarios: UsuarioRepositoryImpl(SupabaseUsuarioDataSource(client)),
       catalogo: CatalogoRepositoryImpl(SupabaseCatalogoDataSource(client)),
       pedidos: PedidoRepositoryImpl(SupabasePedidoDataSource(client)),
+      calificaciones: CalificacionRepositoryImpl(SupabaseCalificacionDataSource(client)),
+      reclamos: ReclamoRepositoryImpl(SupabaseReclamoDataSource(client)),
     ),
   );
 }
@@ -103,6 +120,8 @@ class App extends StatelessWidget {
   final UsuarioRepository usuarios;
   final CatalogoRepository catalogo;
   final PedidoRepository pedidos;
+  final CalificacionRepository calificaciones;
+  final ReclamoRepository reclamos;
 
   const App({
     super.key,
@@ -110,6 +129,8 @@ class App extends StatelessWidget {
     required this.usuarios,
     required this.catalogo,
     required this.pedidos,
+    required this.calificaciones,
+    required this.reclamos,
   });
 
   @override
@@ -198,6 +219,12 @@ class App extends StatelessWidget {
             BlocProvider(
               create: (_) => MisEntregasBloc(WatchMisEntregasUseCase(pedidos)),
             ),
+            BlocProvider(
+              create: (_) => ProductosBloc(
+                WatchProductosUseCase(catalogo),
+                CambiarDisponibilidadUseCase(catalogo),
+              ),
+            ),
           ],
           child: ProveedorPanelScreen(usuario: _usuario(context)),
         ),
@@ -205,16 +232,29 @@ class App extends StatelessWidget {
         AppRoutes.panelSoporte: (context) => BlocProvider(
           create: (_) => PanelBloc(SignOutUseCase(auth)),
           child: Scaffold(
-            body: SafeArea(child: PerfilPage(usuario: _usuario(context))),
+            body: SafeArea(
+              child: PerfilPage(usuario: _usuario(context), onUsuarioActualizado: (_) {}),
+            ),
           ),
+        ),
+        AppRoutes.editarPerfil: (context) => BlocProvider(
+          create: (_) => EditarPerfilBloc(
+            ActualizarPerfilUseCase(usuarios),
+            _usuario(context),
+          ),
+          child: const EditarPerfilScreen(),
         ),
         AppRoutes.detallePedido: (context) => BlocProvider(
           create: (_) => DetallePedidoBloc(TomarPedidoUseCase(pedidos), _pedido(context)),
           child: const DetallePedidoScreen(),
         ),
         AppRoutes.gestionarPedido: (context) => BlocProvider(
-          create: (_) =>
-              GestionarPedidoBloc(AvanzarPedidoUseCase(pedidos), _pedido(context)),
+          create: (_) => GestionarPedidoBloc(
+            AvanzarPedidoUseCase(pedidos),
+            CalificarUseCase(calificaciones),
+            GetMiCalificacionUseCase(calificaciones),
+            _pedido(context),
+          )..add(GestionarPedidoStarted()),
           child: const GestionarPedidoScreen(),
         ),
       },

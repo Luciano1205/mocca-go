@@ -13,11 +13,28 @@ import 'package:mocca_go/theme/app_theme.dart';
 import 'package:mocca_go/utils/formato.dart';
 
 /// Pestaña "Perfil" (13 · Perfil, 20 · Perfil domiciliario): nombre, rol,
-/// descripción, calificación y cerrar sesión. Editar llega en el sprint 3.
+/// descripción, calificación, editar perfil y cerrar sesión.
 class PerfilPage extends StatelessWidget {
   final Usuario usuario;
 
-  const PerfilPage({super.key, required this.usuario});
+  /// El panel guarda el perfil editado para que no se pierda al cambiar de
+  /// pestaña.
+  final ValueChanged<Usuario> onUsuarioActualizado;
+
+  const PerfilPage({
+    super.key,
+    required this.usuario,
+    required this.onUsuarioActualizado,
+  });
+
+  Future<void> _editar(BuildContext context) async {
+    final nuevo = await Navigator.pushNamed(
+      context,
+      AppRoutes.editarPerfil,
+      arguments: usuario,
+    );
+    if (nuevo is Usuario) onUsuarioActualizado(nuevo);
+  }
 
   String get _rol {
     switch (usuario.rol) {
@@ -116,6 +133,8 @@ class PerfilPage extends StatelessWidget {
                 MessageBanner(title: state.errorMessage!, isError: true),
               ],
               const Spacer(),
+              PrimaryButton(label: 'Editar perfil', onPressed: () => _editar(context)),
+              const SizedBox(height: 10),
               PrimaryButton(
                 label: 'Cerrar sesión',
                 isSecondary: true,
