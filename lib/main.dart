@@ -49,11 +49,11 @@ import 'package:mocca_go/features/pedido_enviado/ui/screens/pedido_enviado_scree
 import 'package:mocca_go/features/pedidos/domain/usecases/avanzar_pedido_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/cancelar_pedido_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/crear_pedido_usecase.dart';
-import 'package:mocca_go/features/pedidos/domain/usecases/get_mis_entregas_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/get_mis_pedidos_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/get_pedido_usecase.dart';
-import 'package:mocca_go/features/pedidos/domain/usecases/get_pedidos_pendientes_usecase.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/tomar_pedido_usecase.dart';
+import 'package:mocca_go/features/pedidos/domain/usecases/watch_mis_entregas_usecase.dart';
+import 'package:mocca_go/features/pedidos/domain/usecases/watch_pedidos_pendientes_usecase.dart';
 import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_bloc.dart';
 import 'package:mocca_go/features/recovery/ui/bloc/new_password_bloc.dart';
 import 'package:mocca_go/features/recovery/ui/bloc/recover_bloc.dart';
@@ -193,10 +193,10 @@ class App extends StatelessWidget {
           providers: [
             BlocProvider(create: (_) => PanelBloc(SignOutUseCase(auth))),
             BlocProvider(
-              create: (_) => PendientesBloc(GetPedidosPendientesUseCase(pedidos)),
+              create: (_) => PendientesBloc(WatchPedidosPendientesUseCase(pedidos)),
             ),
             BlocProvider(
-              create: (_) => MisEntregasBloc(GetMisEntregasUseCase(pedidos)),
+              create: (_) => MisEntregasBloc(WatchMisEntregasUseCase(pedidos)),
             ),
           ],
           child: ProveedorPanelScreen(usuario: _usuario(context)),

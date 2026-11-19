@@ -12,18 +12,18 @@ import 'package:mocca_go/routes/app_routes.dart';
 import 'package:mocca_go/theme/app_theme.dart';
 
 /// Pestaña "Pedidos" del domiciliario (14 · Pedidos pendientes y
-/// 14c · Sin pedidos). Se desliza hacia abajo para recargar.
+/// 14c · Sin pedidos). Se actualiza sola con Supabase Realtime; deslizar
+/// hacia abajo vuelve a abrir la suscripción por si se cayó la conexión.
 class PendientesPage extends StatelessWidget {
   const PendientesPage({super.key});
 
-  Future<void> _abrir(BuildContext context, Pedido pedido) async {
-    await Navigator.pushNamed(context, AppRoutes.detallePedido, arguments: pedido);
-    // Al volver (lo tomó o no) el feed puede haber cambiado.
-    if (context.mounted) context.read<PendientesBloc>().add(PendientesRequested());
+  void _abrir(BuildContext context, Pedido pedido) {
+    // Al volver no hace falta recargar: el Stream ya trae el cambio.
+    Navigator.pushNamed(context, AppRoutes.detallePedido, arguments: pedido);
   }
 
   Future<void> _recargar(BuildContext context) async {
-    final bloc = context.read<PendientesBloc>()..add(PendientesRequested());
+    final bloc = context.read<PendientesBloc>()..add(PendientesStarted());
     await bloc.stream.firstWhere((s) => s.status != PendientesStatus.loading);
   }
 
@@ -69,7 +69,7 @@ class PendientesPage extends StatelessWidget {
                   child: EstadoVacio(
                     icono: Icons.coffee_outlined,
                     titulo: 'No hay pedidos pendientes',
-                    mensaje: 'Desliza hacia abajo para buscar nuevos pedidos.',
+                    mensaje: 'Te avisaremos con una notificación cuando llegue un nuevo pedido.',
                   ),
                 )
               else

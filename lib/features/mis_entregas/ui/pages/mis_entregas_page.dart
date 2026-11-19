@@ -11,17 +11,18 @@ import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 import 'package:mocca_go/routes/app_routes.dart';
 import 'package:mocca_go/theme/app_theme.dart';
 
-/// Pestaña "Mis entregas" del domiciliario (16 · Activos, 16b · Historial).
+/// Pestaña "Mis entregas" del domiciliario (16 · Activos, 16b · Historial),
+/// en tiempo real.
 class MisEntregasPage extends StatelessWidget {
   const MisEntregasPage({super.key});
 
-  Future<void> _abrir(BuildContext context, Pedido pedido) async {
-    await Navigator.pushNamed(context, AppRoutes.gestionarPedido, arguments: pedido);
-    if (context.mounted) context.read<MisEntregasBloc>().add(MisEntregasRequested());
+  void _abrir(BuildContext context, Pedido pedido) {
+    // Al volver no hace falta recargar: el Stream ya trae el cambio.
+    Navigator.pushNamed(context, AppRoutes.gestionarPedido, arguments: pedido);
   }
 
   Future<void> _recargar(BuildContext context) async {
-    final bloc = context.read<MisEntregasBloc>()..add(MisEntregasRequested());
+    final bloc = context.read<MisEntregasBloc>()..add(MisEntregasStarted());
     await bloc.stream.firstWhere((s) => s.status != MisEntregasStatus.loading);
   }
 
@@ -113,7 +114,7 @@ class _Pestana extends StatelessWidget {
       ),
       onSelected: (_) {
         if (!activa) {
-          context.read<MisEntregasBloc>().add(MisEntregasRequested(activos: activos));
+          context.read<MisEntregasBloc>().add(MisEntregasStarted(activos: activos));
         }
       },
     );

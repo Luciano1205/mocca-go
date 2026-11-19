@@ -4,6 +4,10 @@ import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/features/pedidos/domain/entities/estado_pedido.dart';
 import 'package:mocca_go/features/pedidos/domain/entities/nuevo_pedido.dart';
 import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
+import 'package:mocca_go/features/pedidos/domain/usecases/watch_pedidos_pendientes_usecase.dart';
+import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_bloc.dart';
+import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_event.dart';
+import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_state.dart';
 import 'package:mocca_go/main.dart';
 
 import 'fakes/fake_pedidos.dart';
@@ -69,6 +73,15 @@ void main() {
     expect(find.text('No hay pedidos pendientes'), findsOneWidget);
   });
 
+  testWidgets('El pedido nuevo aparece solo, sin recargar (14c → 14)', (tester) async {
+    await abrirComoAndres(tester);
+    expect(find.text('No hay pedidos pendientes'), findsOneWidget);
+
+    await pedidoDeLaura();
+    await tester.pumpAndSettle();
+    expect(find.text('1 pedido esperando domiciliario'), findsOneWidget);
+  });
+
   testWidgets('Toma un pedido y lo entrega (14 → 15 → 17 → 17b → 17c)', (tester) async {
     final pedido = await pedidoDeLaura();
     await abrirComoAndres(tester);
@@ -113,5 +126,25 @@ void main() {
     expect(find.text('Este pedido ya fue tomado'), findsOneWidget);
     await tocar(tester, 'Volver a pedidos');
     expect(find.text('No hay pedidos pendientes'), findsOneWidget);
+  });
+
+  test('El Bloc marca como nuevo solo lo que llega después de abrir (14b)', () async {
+    final viejo = await pedidoDeLaura();
+    final bloc = PendientesBloc(WatchPedidosPendientesUseCase(pedidos))
+      ..add(PendientesStarted());
+    final estados = <PendientesState>[];
+    final sub = bloc.stream.listen(estados.add);
+    await Future<void>.delayed(Duration.zero);
+
+    final nuevo = await pedidoDeLaura();
+    await Future<void>.delayed(Duration.zero);
+    await sub.cancel();
+    await bloc.close();
+
+    final listos = estados.where((s) => s.status == PendientesStatus.success).toList();
+    expect(listos.first.pedidos.map((p) => p.id), [viejo.id]);
+    expect(listos.first.nuevo, isNull);
+    expect(listos.last.pedidos.length, 2);
+    expect(listos.last.nuevo!.id, nuevo.id);
   });
 }
