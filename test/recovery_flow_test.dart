@@ -136,6 +136,19 @@ void main() {
     expect(auth.passwords[email], '123456');
   });
 
+  testWidgets('El aviso del servidor se quita si luego hay errores del formulario', (
+    tester,
+  ) async {
+    await abrirApp(tester);
+    await irANuevaContrasena(tester);
+    await cambiar(tester, '999999', 'nueva123', 'nueva123');
+    expect(find.text('El código es incorrecto o ya venció.'), findsOneWidget);
+
+    await cambiar(tester, '123', 'nueva123', 'nueva123');
+    expect(find.text('Escribe el código de 6 dígitos'), findsOneWidget);
+    expect(find.text('El código es incorrecto o ya venció.'), findsNothing);
+  });
+
   testWidgets('Reenviar el código muestra el aviso verde', (tester) async {
     await abrirApp(tester);
     await irANuevaContrasena(tester);

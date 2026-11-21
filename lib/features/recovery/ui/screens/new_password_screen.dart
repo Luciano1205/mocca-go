@@ -86,9 +86,14 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
           builder: (context, state) {
             final isLoading = state.status == NewPasswordStatus.loading;
             final isResending = state.resendStatus == NewPasswordStatus.loading;
+            // Si el formulario tiene errores de validación, el aviso rojo del
+            // intento anterior ya no aplica: solo se muestran los del formulario.
+            final hayErroresFormulario =
+                _codeError != null || _passwordError != null || _confirmError != null;
             final serverError =
-                state.status == NewPasswordStatus.failure ||
-                    state.resendStatus == NewPasswordStatus.failure
+                !hayErroresFormulario &&
+                    (state.status == NewPasswordStatus.failure ||
+                        state.resendStatus == NewPasswordStatus.failure)
                 ? state.errorMessage
                 : null;
             final resent = state.resendStatus == NewPasswordStatus.success;
