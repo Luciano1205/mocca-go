@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:mocca_go/components/calificar_sheet.dart';
+import 'package:mocca_go/components/estrellas.dart';
 import 'package:mocca_go/components/message_banner.dart';
 import 'package:mocca_go/components/pedido_secciones.dart';
 import 'package:mocca_go/components/primary_button.dart';
@@ -14,9 +16,22 @@ import 'package:mocca_go/theme/app_theme.dart';
 import 'package:mocca_go/utils/formato.dart';
 
 /// 17 · Gestionar (Aceptado), 17b · En camino y 17c · Entrega completada.
-/// Un solo botón avanza el estado.
+/// Un solo botón avanza el estado. Al entregar se abre 18 · Calificar cliente.
 class GestionarPedidoScreen extends StatelessWidget {
   const GestionarPedidoScreen({super.key});
+
+  /// 18 · "¡Pedido entregado! ¿Cómo te fue con Laura?"
+  Future<void> _calificar(BuildContext context, Pedido pedido) async {
+    final bloc = context.read<GestionarPedidoBloc>();
+    final nombre = pedido.clienteNombre.split(' ').first;
+    final valor = await CalificarSheet.mostrar(
+      context,
+      titulo: '¡Pedido entregado!',
+      pregunta: '¿Cómo te fue con $nombre?',
+      nombre: pedido.clienteNombre,
+    );
+    if (valor != null) bloc.add(CalificarClientePressed(valor));
+  }
 
   String _subtitulo(Pedido pedido) {
     final fecha = pedido.historial[pedido.estado];
@@ -50,7 +65,9 @@ class GestionarPedidoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<GestionarPedidoBloc, GestionarPedidoState>(
+    return BlocConsumer<GestionarPedidoBloc, GestionarPedidoState>(
+      listenWhen: (antes, ahora) => ahora.pedirCalificacion,
+      listener: (context, state) => _calificar(context, state.pedido),
       builder: (context, state) {
         final pedido = state.pedido;
         final accion = _accion(pedido.estado);
@@ -72,6 +89,13 @@ class GestionarPedidoScreen extends StatelessWidget {
                     subtitle: 'Cobro confirmado: ${formatoPesos(pedido.total)}',
                   ),
                   const SizedBox(height: 14),
+                  if (state.miCalificacion != null) ...[
+                    _CalificacionDada(
+                      nombre: pedido.clienteNombre.split(' ').first,
+                      valor: state.miCalificacion!,
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                 ],
                 _Progreso(pedido: pedido),
                 const SizedBox(height: 14),
@@ -94,10 +118,23 @@ class GestionarPedidoScreen extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
               child: accion == null
-                  ? PrimaryButton(
-                      label: 'Volver a pedidos',
-                      isSecondary: true,
-                      onPressed: () => Navigator.pop(context),
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (entregado && state.miCalificacion == null) ...[
+                          PrimaryButton(
+                            label: 'Calificar a ${pedido.clienteNombre.split(' ').first}',
+                            isLoading: state.status == GestionarPedidoStatus.calificando,
+                            onPressed: () => _calificar(context, pedido),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        PrimaryButton(
+                          label: 'Volver a pedidos',
+                          isSecondary: true,
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
                     )
                   : PrimaryButton(
                       label: accion,
@@ -193,6 +230,31 @@ class _Paso extends StatelessWidget {
             style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
           ),
       ],
+    );
+  }
+}
+
+/// "Calificaste a Laura ★★★★★" en un pedido ya calificado.
+class _CalificacionDada extends StatelessWidget {
+  final String nombre;
+  final int valor;
+
+  const _CalificacionDada({required this.nombre, required this.valor});
+
+  @override
+  Widget build(BuildContext context) {
+    return SurfaceCard(
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Calificaste a $nombre',
+              style: const TextStyle(fontSize: 15, color: AppColors.text),
+            ),
+          ),
+          Estrellas(valor: valor, size: 20),
+        ],
+      ),
     );
   }
 }

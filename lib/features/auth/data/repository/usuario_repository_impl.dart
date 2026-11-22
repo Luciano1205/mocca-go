@@ -10,4 +10,13 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
 
   @override
   Future<Usuario> getUsuario(String id) => _dataSource.getUsuario(id);
+
+  @override
+  Future<Usuario> actualizarPerfil(
+    String id, {
+    required String nombre,
+    String? descripcion,
+  }) {
+    return _dataSource.actualizarPerfil(id, nombre: nombre, descripcion: descripcion);
+  }
 }

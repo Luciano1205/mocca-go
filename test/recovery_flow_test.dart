@@ -5,6 +5,8 @@ import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/features/auth/domain/errors/auth_failure.dart';
 import 'package:mocca_go/main.dart';
 
+import 'fakes/fake_complementos.dart';
+import 'fakes/fake_dependencias.dart';
 import 'fakes/fake_pedidos.dart';
 import 'fakes/fake_repositories.dart';
 
@@ -42,14 +44,15 @@ void main() {
 
   Future<void> abrirApp(WidgetTester tester) async {
     final catalogo = FakeCatalogoRepository();
-    await tester.pumpWidget(
-      App(
-        auth: auth,
-        usuarios: usuarios,
-        catalogo: catalogo,
-        pedidos: FakePedidoRepository(catalogo),
-      ),
+    registrarFakes(
+      auth: auth,
+      usuarios: usuarios,
+      catalogo: catalogo,
+      pedidos: FakePedidoRepository(catalogo),
+      calificaciones: FakeCalificacionRepository(),
+      reclamos: FakeReclamoRepository(),
     );
+    await tester.pumpWidget(const App());
     // El splash dura al menos 1,5 s.
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
@@ -131,6 +134,19 @@ void main() {
     await cambiar(tester, '999999', 'nueva123', 'nueva123');
     expect(find.text('El código es incorrecto o ya venció.'), findsOneWidget);
     expect(auth.passwords[email], '123456');
+  });
+
+  testWidgets('El aviso del servidor se quita si luego hay errores del formulario', (
+    tester,
+  ) async {
+    await abrirApp(tester);
+    await irANuevaContrasena(tester);
+    await cambiar(tester, '999999', 'nueva123', 'nueva123');
+    expect(find.text('El código es incorrecto o ya venció.'), findsOneWidget);
+
+    await cambiar(tester, '123', 'nueva123', 'nueva123');
+    expect(find.text('Escribe el código de 6 dígitos'), findsOneWidget);
+    expect(find.text('El código es incorrecto o ya venció.'), findsNothing);
   });
 
   testWidgets('Reenviar el código muestra el aviso verde', (tester) async {

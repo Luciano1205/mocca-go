@@ -73,6 +73,33 @@ class SupabaseCatalogoDataSource {
     }
   }
 
+  /// La RLS solo deja cambiarla a los domiciliarios; quién y cuándo lo
+  /// pone un trigger.
+  Future<void> cambiarDisponibilidad(String productoId, {required bool disponible}) async {
+    try {
+      final rows = await _client
+          .from('producto')
+          .update({'disponible': disponible})
+          .eq('id', productoId)
+          .select('id');
+      if (rows.isEmpty) {
+        throw const CatalogoFailure('No tienes permiso para cambiar este producto.');
+      }
+    } on PostgrestException {
+      throw const CatalogoFailure('No se pudo actualizar el producto.');
+    }
+  }
+
+  /// `producto` no necesita relaciones, así que las filas del stream ya
+  /// sirven tal cual (lección "El Stream viaja por las capas").
+  Stream<List<Producto>> watchProductos() {
+    return _client
+        .from('producto')
+        .stream(primaryKey: ['id'])
+        .order('precio', ascending: true)
+        .map((rows) => rows.map(_toProducto).toList());
+  }
+
   Producto _toProducto(Map<String, dynamic> row) {
     final path = row['imagen_path'] as String?;
     return Producto(

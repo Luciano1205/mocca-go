@@ -13,6 +13,9 @@ class AppRoutes {
   static const panelProveedor = '/proveedor';
   static const panelSoporte = '/soporte';
 
+  /// Recibe el Usuario como argumento y lo devuelve editado al guardar.
+  static const editarPerfil = '/perfil/editar';
+
   // Cliente: el carrito vive en CarritoBloc; Enviado, Seguimiento y
   // Detalle reciben el Pedido como argumento.
   static const carrito = '/cliente/carrito';

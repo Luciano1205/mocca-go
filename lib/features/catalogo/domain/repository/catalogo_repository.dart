@@ -16,4 +16,11 @@ abstract class CatalogoRepository {
 
   /// Entidades activas para pagar por transferencia.
   Future<List<EntidadPago>> getEntidadesPago();
+
+  /// El domiciliario marca un producto como disponible o agotado (19).
+  Future<void> cambiarDisponibilidad(String productoId, {required bool disponible});
+
+  /// Todos los productos, otra vez cada vez que cambia uno (menú del
+  /// cliente y pestaña Productos del domiciliario).
+  Stream<List<Producto>> watchProductos();
 }

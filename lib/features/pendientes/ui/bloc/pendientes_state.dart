@@ -8,22 +8,29 @@ class PendientesState {
   final List<Pedido> pedidos;
   final String? errorMessage;
 
+  /// El pedido que acaba de llegar, para la notificación (14b). Solo viene
+  /// en la emisión en que aparece; no cuenta los que ya estaban al abrir.
+  final Pedido? nuevo;
+
   const PendientesState({
     this.status = PendientesStatus.initial,
     this.pedidos = const [],
     this.errorMessage,
+    this.nuevo,
   });
 
-  /// [errorMessage] no se arrastra: si no se pasa, queda vacío.
+  /// [errorMessage] y [nuevo] no se arrastran: si no se pasan, quedan vacíos.
   PendientesState copyWith({
     PendientesStatus? status,
     List<Pedido>? pedidos,
     String? errorMessage,
+    Pedido? nuevo,
   }) {
     return PendientesState(
       status: status ?? this.status,
       pedidos: pedidos ?? this.pedidos,
       errorMessage: errorMessage,
+      nuevo: nuevo,
     );
   }
 }

@@ -33,4 +33,22 @@ class SupabaseUsuarioDataSource {
       throw const AuthFailure('No se pudo cargar tu perfil.');
     }
   }
+
+  /// La RLS solo deja editar el propio perfil, y el grant solo
+  /// `nombre` y `descripcion`.
+  Future<Usuario> actualizarPerfil(
+    String id, {
+    required String nombre,
+    String? descripcion,
+  }) async {
+    try {
+      await _client
+          .from('usuario')
+          .update({'nombre': nombre, 'descripcion': descripcion})
+          .eq('id', id);
+    } on PostgrestException {
+      throw const AuthFailure('No se pudo guardar tu perfil.');
+    }
+    return getUsuario(id);
+  }
 }

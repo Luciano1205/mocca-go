@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mocca_go/features/catalogo/domain/entities/categoria.dart';
 import 'package:mocca_go/features/catalogo/domain/entities/entidad_pago.dart';
 import 'package:mocca_go/features/catalogo/domain/entities/producto.dart';
@@ -54,6 +56,27 @@ class FakeCatalogoRepository implements CatalogoRepository {
 
   @override
   Future<List<EntidadPago>> getEntidadesPago() async => entidades;
+
+  final _cambios = StreamController<void>.broadcast();
+
+  @override
+  Future<void> cambiarDisponibilidad(String productoId, {required bool disponible}) async {
+    final i = productos.indexWhere((p) => p.id == productoId);
+    final p = productos[i];
+    productos[i] = Producto(
+      id: p.id,
+      categoriaId: p.categoriaId,
+      nombre: p.nombre,
+      descripcion: p.descripcion,
+      precio: p.precio,
+      imagenUrl: p.imagenUrl,
+      disponible: disponible,
+    );
+    _cambios.add(null);
+  }
+
+  @override
+  Stream<List<Producto>> watchProductos() => _escuchar(_cambios, () async => [...productos]);
 }
 
 /// Pedidos en memoria. [usuarioActual] hace de la sesión: cambia de cliente
@@ -68,6 +91,14 @@ class FakePedidoRepository implements PedidoRepository {
 
   FakePedidoRepository(this.catalogo);
 
+  /// Hace de Supabase Realtime: avisa cada vez que cambia un pedido.
+  final _cambios = StreamController<void>.broadcast();
+
+  void _avisar() => _cambios.add(null);
+
+  /// Emite el valor actual y otra vez en cada cambio, como `stream()`.
+  Stream<T> _watch<T>(Future<T> Function() consulta) => _escuchar(_cambios, consulta);
+
   @override
   Future<Pedido> crear(NuevoPedido nuevo) async {
     final items = <ItemPedido>[];
@@ -76,6 +107,7 @@ class FakePedidoRepository implements PedidoRepository {
       if (!p.disponible) throw PedidoFailure('El producto ${p.nombre} está agotado');
       items.add(
         ItemPedido(
+          id: 'd$_siguiente-${p.id}',
           nombre: p.nombre,
           precioUnitario: p.precio,
           cantidad: linea.cantidad,
@@ -107,6 +139,7 @@ class FakePedidoRepository implements PedidoRepository {
     );
     clienteDe[id] = usuarioActual;
     domiciliarioDe[id] = null;
+    _avisar();
     return pedidos[id]!;
   }
 
@@ -122,6 +155,7 @@ class FakePedidoRepository implements PedidoRepository {
       return false;
     }
     pedidos[pedidoId] = p.copyWith(estado: EstadoPedido.cancelado);
+    _avisar();
     return true;
   }
 
@@ -143,6 +177,7 @@ class FakePedidoRepository implements PedidoRepository {
       estado: EstadoPedido.aceptado,
       domiciliarioNombre: usuarioActual,
     );
+    _avisar();
     return true;
   }
 
@@ -155,6 +190,7 @@ class FakePedidoRepository implements PedidoRepository {
     final p = pedidos[pedidoId]!;
     if (domiciliarioDe[pedidoId] != usuarioActual || p.estado != actual) return false;
     pedidos[pedidoId] = p.copyWith(estado: nuevo);
+    _avisar();
     return true;
   }
 
@@ -164,4 +200,56 @@ class FakePedidoRepository implements PedidoRepository {
     if (p == null) throw const PedidoFailure('No se pudo cargar el pedido.');
     return p;
   }
+
+  @override
+  Stream<List<Pedido>> watchPendientes() => _watch(pendientes);
+
+  // Como en Supabase, el Stream queda con el usuario que lo abrió.
+  @override
+  Stream<List<Pedido>> watchMisPedidos({required bool activos}) {
+    final usuario = usuarioActual;
+    return _watch(
+      () async => pedidos.values
+          .where((p) => clienteDe[p.id] == usuario && p.estado.activo == activos)
+          .toList(),
+    );
+  }
+
+  @override
+  Stream<List<Pedido>> watchMisEntregas({required bool activos}) {
+    final usuario = usuarioActual;
+    return _watch(
+      () async => pedidos.values
+          .where((p) => domiciliarioDe[p.id] == usuario && p.estado.activo == activos)
+          .toList(),
+    );
+  }
+
+  @override
+  Stream<Pedido> watchPedido(String pedidoId) => _watch(() => getPedido(pedidoId));
+}
+
+/// Hace de `stream()` de Supabase: emite el resultado de [consulta] al
+/// escuchar y otra vez con cada aviso de [cambios]. Usa un StreamController
+/// (y no `async*`) para que `cancel()` termine de inmediato.
+Stream<T> _escuchar<T>(StreamController<void> cambios, Future<T> Function() consulta) {
+  late final StreamController<T> controller;
+  StreamSubscription<void>? avisos;
+
+  Future<void> emitir() async {
+    try {
+      controller.add(await consulta());
+    } on Exception catch (e) {
+      controller.addError(e);
+    }
+  }
+
+  controller = StreamController<T>(
+    onListen: () {
+      emitir();
+      avisos = cambios.stream.listen((_) => emitir());
+    },
+    onCancel: () => avisos?.cancel(),
+  );
+  return controller.stream;
 }
