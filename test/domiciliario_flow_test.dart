@@ -12,6 +12,7 @@ import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_state.dart';
 import 'package:mocca_go/main.dart';
 
 import 'fakes/fake_complementos.dart';
+import 'fakes/fake_dependencias.dart';
 import 'fakes/fake_pedidos.dart';
 import 'fakes/fake_repositories.dart';
 
@@ -60,16 +61,15 @@ void main() {
       rol: Rol.proveedor,
     );
     pedidos.usuarioActual = 'andres';
-    await tester.pumpWidget(
-      App(
-        auth: auth,
-        usuarios: usuarios,
-        catalogo: catalogo,
-        pedidos: pedidos,
-        calificaciones: calificaciones,
-        reclamos: FakeReclamoRepository(),
-      ),
+    registrarFakes(
+      auth: auth,
+      usuarios: usuarios,
+      catalogo: catalogo,
+      pedidos: pedidos,
+      calificaciones: calificaciones,
+      reclamos: FakeReclamoRepository(),
     );
+    await tester.pumpWidget(const App());
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
   }

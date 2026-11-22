@@ -8,6 +8,7 @@ import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 import 'package:mocca_go/main.dart';
 
 import 'fakes/fake_complementos.dart';
+import 'fakes/fake_dependencias.dart';
 import 'fakes/fake_pedidos.dart';
 import 'fakes/fake_repositories.dart';
 
@@ -45,16 +46,15 @@ void main() {
     tester.view.physicalSize = const Size(2400, 3000);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      App(
-        auth: auth,
-        usuarios: usuarios,
-        catalogo: catalogo,
-        pedidos: pedidos,
-        calificaciones: calificaciones,
-        reclamos: FakeReclamoRepository(),
-      ),
+    registrarFakes(
+      auth: auth,
+      usuarios: usuarios,
+      catalogo: catalogo,
+      pedidos: pedidos,
+      calificaciones: calificaciones,
+      reclamos: FakeReclamoRepository(),
     );
+    await tester.pumpWidget(const App());
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
   }

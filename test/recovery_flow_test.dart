@@ -6,6 +6,7 @@ import 'package:mocca_go/features/auth/domain/errors/auth_failure.dart';
 import 'package:mocca_go/main.dart';
 
 import 'fakes/fake_complementos.dart';
+import 'fakes/fake_dependencias.dart';
 import 'fakes/fake_pedidos.dart';
 import 'fakes/fake_repositories.dart';
 
@@ -43,16 +44,15 @@ void main() {
 
   Future<void> abrirApp(WidgetTester tester) async {
     final catalogo = FakeCatalogoRepository();
-    await tester.pumpWidget(
-      App(
-        auth: auth,
-        usuarios: usuarios,
-        catalogo: catalogo,
-        pedidos: FakePedidoRepository(catalogo),
-        calificaciones: FakeCalificacionRepository(),
-        reclamos: FakeReclamoRepository(),
-      ),
+    registrarFakes(
+      auth: auth,
+      usuarios: usuarios,
+      catalogo: catalogo,
+      pedidos: FakePedidoRepository(catalogo),
+      calificaciones: FakeCalificacionRepository(),
+      reclamos: FakeReclamoRepository(),
     );
+    await tester.pumpWidget(const App());
     // El splash dura al menos 1,5 s.
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
