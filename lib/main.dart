@@ -29,6 +29,9 @@ import 'package:mocca_go/features/pedido_enviado/ui/screens/pedido_enviado_scree
 import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_bloc.dart';
 import 'package:mocca_go/features/productos/ui/bloc/productos_bloc.dart';
+import 'package:mocca_go/features/reclamo_chat/ui/bloc/reclamo_bloc.dart';
+import 'package:mocca_go/features/reclamo_chat/ui/bloc/reclamo_event.dart';
+import 'package:mocca_go/features/reclamo_chat/ui/screens/reclamo_screen.dart';
 import 'package:mocca_go/features/recovery/ui/bloc/new_password_bloc.dart';
 import 'package:mocca_go/features/recovery/ui/bloc/recover_bloc.dart';
 import 'package:mocca_go/features/recovery/ui/screens/new_password_screen.dart';
@@ -129,10 +132,19 @@ class App extends StatelessWidget {
         AppRoutes.pedidoEnviado: (_) => const PedidoEnviadoScreen(),
         AppRoutes.seguimiento: (context) => BlocProvider(
           create: (_) =>
-              sl<SeguimientoBloc>(param1: _pedido(context))..add(SeguimientoRequested()),
+              sl<SeguimientoBloc>(param1: _pedido(context))..add(SeguimientoStarted()),
           child: const SeguimientoScreen(),
         ),
-        AppRoutes.detalleMiPedido: (_) => const DetalleMiPedidoScreen(),
+        // Mismo Bloc del seguimiento: así se puede calificar desde el historial.
+        AppRoutes.detalleMiPedido: (context) => BlocProvider(
+          create: (_) =>
+              sl<SeguimientoBloc>(param1: _pedido(context))..add(SeguimientoStarted()),
+          child: const DetalleMiPedidoScreen(),
+        ),
+        AppRoutes.reclamo: (context) => BlocProvider(
+          create: (_) => sl<ReclamoBloc>(param1: _pedido(context))..add(ReclamoStarted()),
+          child: const ReclamoScreen(),
+        ),
         AppRoutes.panelProveedor: (context) => MultiBlocProvider(
           providers: [
             BlocProvider(create: (_) => sl<PanelBloc>()),
@@ -177,7 +189,7 @@ class App extends StatelessWidget {
     return ModalRoute.of(context)!.settings.arguments as Usuario;
   }
 
-  /// Seguimiento, Detalle y Gestionar reciben el [Pedido] como argumento.
+  /// Seguimiento, Detalle, Reclamo y Gestionar reciben el [Pedido] como argumento.
   Pedido _pedido(BuildContext context) {
     return ModalRoute.of(context)!.settings.arguments as Pedido;
   }

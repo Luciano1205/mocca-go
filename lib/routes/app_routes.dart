@@ -24,6 +24,9 @@ class AppRoutes {
   static const seguimiento = '/cliente/pedido';
   static const detalleMiPedido = '/cliente/pedido/detalle';
 
+  /// Chat de reclamos (21 y 22): recibe el Pedido como argumento.
+  static const reclamo = '/cliente/pedido/reclamo';
+
   // Domiciliario: reciben el Pedido como argumento.
   static const detallePedido = '/proveedor/pedido';
   static const gestionarPedido = '/proveedor/gestionar';

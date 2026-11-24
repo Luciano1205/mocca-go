@@ -55,6 +55,7 @@ import 'package:mocca_go/features/pedidos/domain/usecases/watch_pedido_usecase.d
 import 'package:mocca_go/features/pedidos/domain/usecases/watch_pedidos_pendientes_usecase.dart';
 import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_bloc.dart';
 import 'package:mocca_go/features/productos/ui/bloc/productos_bloc.dart';
+import 'package:mocca_go/features/reclamo_chat/ui/bloc/reclamo_bloc.dart';
 import 'package:mocca_go/features/reclamos/data/repository/reclamo_repository_impl.dart';
 import 'package:mocca_go/features/reclamos/data/source/supabase_reclamo_data_source.dart';
 import 'package:mocca_go/features/reclamos/domain/repository/reclamo_repository.dart';
@@ -167,7 +168,10 @@ void registrarDominioYUi() {
   sl.registerFactory(() => MisPedidosBloc(sl()));
   sl.registerFactory(() => DatosEntregaBloc(sl(), sl(), sl()));
   sl.registerFactoryParam<SeguimientoBloc, Pedido, void>(
-    (pedido, _) => SeguimientoBloc(sl(), sl(), pedido),
+    (pedido, _) => SeguimientoBloc(sl(), sl(), sl(), sl(), pedido),
+  );
+  sl.registerFactoryParam<ReclamoBloc, Pedido, void>(
+    (pedido, _) => ReclamoBloc(sl(), sl(), pedido),
   );
 
   // Domiciliario

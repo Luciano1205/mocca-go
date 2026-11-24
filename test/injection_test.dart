@@ -16,6 +16,7 @@ import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 import 'package:mocca_go/features/pedidos/domain/usecases/crear_pedido_usecase.dart';
 import 'package:mocca_go/features/pendientes/ui/bloc/pendientes_bloc.dart';
 import 'package:mocca_go/features/productos/ui/bloc/productos_bloc.dart';
+import 'package:mocca_go/features/reclamo_chat/ui/bloc/reclamo_bloc.dart';
 import 'package:mocca_go/features/recovery/ui/bloc/new_password_bloc.dart';
 import 'package:mocca_go/features/recovery/ui/bloc/recover_bloc.dart';
 import 'package:mocca_go/features/register/ui/bloc/register_bloc.dart';
@@ -67,6 +68,7 @@ void main() {
     expect(sl<MisPedidosBloc>(), isA<MisPedidosBloc>());
     expect(sl<DatosEntregaBloc>(), isA<DatosEntregaBloc>());
     expect(sl<SeguimientoBloc>(param1: pedido), isA<SeguimientoBloc>());
+    expect(sl<ReclamoBloc>(param1: pedido), isA<ReclamoBloc>());
     expect(sl<PendientesBloc>(), isA<PendientesBloc>());
     expect(sl<MisEntregasBloc>(), isA<MisEntregasBloc>());
     expect(sl<ProductosBloc>(), isA<ProductosBloc>());

@@ -5,6 +5,7 @@ import 'package:mocca_go/features/auth/domain/entities/usuario.dart';
 import 'package:mocca_go/features/pedidos/domain/entities/estado_pedido.dart';
 import 'package:mocca_go/features/pedidos/domain/entities/nuevo_pedido.dart';
 import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
+import 'package:mocca_go/features/reclamos/domain/entities/reclamo.dart';
 import 'package:mocca_go/main.dart';
 
 import 'fakes/fake_complementos.dart';
@@ -18,6 +19,7 @@ void main() {
   late FakeCatalogoRepository catalogo;
   late FakePedidoRepository pedidos;
   late FakeCalificacionRepository calificaciones;
+  late FakeReclamoRepository reclamos;
   const laura = 'Laura Gómez';
 
   setUp(() {
@@ -26,6 +28,7 @@ void main() {
     catalogo = FakeCatalogoRepository();
     pedidos = FakePedidoRepository(catalogo);
     calificaciones = FakeCalificacionRepository();
+    reclamos = FakeReclamoRepository();
   });
 
   /// Abre la app con la sesión de Laura (cliente) ya iniciada.
@@ -52,7 +55,7 @@ void main() {
       catalogo: catalogo,
       pedidos: pedidos,
       calificaciones: calificaciones,
-      reclamos: FakeReclamoRepository(),
+      reclamos: reclamos,
     );
     await tester.pumpWidget(const App());
     await tester.pump(const Duration(milliseconds: 1600));
@@ -229,23 +232,147 @@ void main() {
     expect(find.text('Pedido cancelado'), findsOneWidget);
   });
 
-  testWidgets('No puede cancelar si un domiciliario ya lo tomó', (tester) async {
+  /// Andrés (domiciliario) toma el pedido y lo lleva hasta [hasta].
+  Future<void> andresLleva(Pedido pedido, EstadoPedido hasta) async {
+    pedidos.usuarioActual = 'Andrés Ruiz';
+    await pedidos.tomar(pedido.id);
+    if (hasta != EstadoPedido.aceptado) {
+      await pedidos.cambiarEstado(
+        pedido.id,
+        actual: EstadoPedido.aceptado,
+        nuevo: EstadoPedido.enCamino,
+      );
+    }
+    if (hasta == EstadoPedido.entregado) {
+      await pedidos.cambiarEstado(
+        pedido.id,
+        actual: EstadoPedido.enCamino,
+        nuevo: EstadoPedido.entregado,
+      );
+    }
+    pedidos.usuarioActual = laura;
+  }
+
+  testWidgets('Mis pedidos cambia solo cuando el domiciliario lo toma (10)', (tester) async {
+    final pedido = await pedidoDeLaura();
+    await abrirComoLaura(tester);
+    await tocarTexto(tester, 'Mis pedidos');
+    expect(find.text('Buscando domiciliario'), findsOneWidget);
+
+    await andresLleva(pedido, EstadoPedido.aceptado);
+    await tester.pumpAndSettle();
+    expect(find.text('Domiciliario: Andrés R.'), findsOneWidget);
+
+    // Al entregarlo pasa solo de Activos a Historial.
+    pedidos.usuarioActual = 'Andrés Ruiz';
+    await pedidos.cambiarEstado(
+      pedido.id,
+      actual: EstadoPedido.aceptado,
+      nuevo: EstadoPedido.enCamino,
+    );
+    await pedidos.cambiarEstado(
+      pedido.id,
+      actual: EstadoPedido.enCamino,
+      nuevo: EstadoPedido.entregado,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('No tienes pedidos en curso'), findsOneWidget);
+    await tocarTexto(tester, 'Historial');
+    expect(find.text('Pedido #${pedido.numero}'), findsOneWidget);
+  });
+
+  testWidgets('El seguimiento avanza solo y ya no deja cancelar (11 → 11b)', (tester) async {
     final pedido = await pedidoDeLaura();
     await abrirComoLaura(tester);
     await tocarTexto(tester, 'Mis pedidos');
     await tocarTexto(tester, 'Pedido #${pedido.numero}');
+    expect(find.text('Cancelar pedido'), findsOneWidget);
+    expect(find.text('Buscando domiciliario...'), findsOneWidget);
 
     // Andrés lo toma mientras Laura mira el seguimiento.
-    pedidos.usuarioActual = 'Andrés Ruiz';
-    await pedidos.tomar(pedido.id);
-    pedidos.usuarioActual = laura;
-
-    await tocarTexto(tester, 'Cancelar pedido');
-    await tocarTexto(tester, 'Sí, cancelar');
-    expect(find.text('Ya no se puede cancelar: un domiciliario tomó tu pedido.'), findsOneWidget);
+    await andresLleva(pedido, EstadoPedido.aceptado);
+    await tester.pumpAndSettle();
     expect(find.text('Andrés Ruiz'), findsOneWidget);
     expect(find.text('Cancelar pedido'), findsNothing);
-    expect(pedidos.pedidos[pedido.id]!.estado, EstadoPedido.aceptado);
+
+    pedidos.usuarioActual = 'Andrés Ruiz';
+    await pedidos.cambiarEstado(
+      pedido.id,
+      actual: EstadoPedido.aceptado,
+      nuevo: EstadoPedido.enCamino,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Andrés R. va en camino'), findsOneWidget);
+  });
+
+  testWidgets('Al entregarse pide calificar y "Ahora no" deja hacerlo después (12)', (
+    tester,
+  ) async {
+    final pedido = await pedidoDeLaura();
+    await andresLleva(pedido, EstadoPedido.enCamino);
+    await abrirComoLaura(tester);
+    await tocarTexto(tester, 'Mis pedidos');
+    await tocarTexto(tester, 'Pedido #${pedido.numero}');
+
+    pedidos.usuarioActual = 'Andrés Ruiz';
+    await pedidos.cambiarEstado(
+      pedido.id,
+      actual: EstadoPedido.enCamino,
+      nuevo: EstadoPedido.entregado,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('¡Tu pedido llegó!'), findsOneWidget);
+    expect(find.text('¿Cómo te atendió Andrés?'), findsOneWidget);
+
+    await tocarTexto(tester, 'Ahora no');
+    expect(calificaciones.dadas, isEmpty);
+    await tocarTexto(tester, 'Calificar a Andrés');
+    await tester.tap(find.byKey(const Key('estrella-5')));
+    await tester.pump();
+    await tocarTexto(tester, 'Enviar calificación');
+    expect(calificaciones.dadas[pedido.id], 5);
+    expect(find.text('Calificaste a Andrés'), findsOneWidget);
+    expect(find.text('Calificar a Andrés'), findsNothing);
+  });
+
+  testWidgets('Califica al domiciliario desde el historial (11d)', (tester) async {
+    final pedido = await pedidoDeLaura();
+    await andresLleva(pedido, EstadoPedido.entregado);
+    await abrirComoLaura(tester);
+    await tocarTexto(tester, 'Mis pedidos');
+    await tocarTexto(tester, 'Historial');
+    await tocarTexto(tester, 'Pedido #${pedido.numero}');
+
+    // Ya estaba entregado al abrir: no salta la hoja sola.
+    expect(find.text('¡Tu pedido llegó!'), findsNothing);
+    await tocarTexto(tester, 'Calificar a Andrés');
+    await tester.tap(find.byKey(const Key('estrella-4')));
+    await tester.pump();
+    await tocarTexto(tester, 'Enviar calificación');
+    expect(calificaciones.dadas[pedido.id], 4);
+    expect(find.text('Calificaste a Andrés'), findsOneWidget);
+  });
+
+  testWidgets('Si ya calificó, el detalle muestra sus estrellas', (tester) async {
+    final pedido = await pedidoDeLaura();
+    await andresLleva(pedido, EstadoPedido.entregado);
+    calificaciones.dadas[pedido.id] = 3;
+    await abrirComoLaura(tester);
+    await tocarTexto(tester, 'Mis pedidos');
+    await tocarTexto(tester, 'Historial');
+    await tocarTexto(tester, 'Pedido #${pedido.numero}');
+    expect(find.text('Calificaste a Andrés'), findsOneWidget);
+    expect(find.text('Calificar a Andrés'), findsNothing);
+  });
+
+  testWidgets('El menú muestra un producto agotado al instante (06)', (tester) async {
+    await abrirComoLaura(tester);
+    expect(find.byTooltip('Agregar Americano'), findsOneWidget);
+
+    await catalogo.cambiarDisponibilidad('americano', disponible: false);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Agregar Americano'), findsNothing);
+    expect(find.text('Agotado'), findsNWidgets(2)); // Croissant y Americano
   });
 
   testWidgets('Un pedido entregado se ve en el historial (10b → 11d)', (tester) async {
@@ -271,5 +398,69 @@ void main() {
     expect(find.text('Pedido entregado'), findsOneWidget);
     expect(find.text('Andrés Ruiz'), findsOneWidget);
     expect(find.text('Total pagado'), findsOneWidget);
+  });
+
+  testWidgets('Reclamo de un pedido entregado: faltó un producto (21 → 21d)', (tester) async {
+    final pedido = await pedidoDeLaura();
+    await andresLleva(pedido, EstadoPedido.entregado);
+    calificaciones.dadas[pedido.id] = 5;
+    await abrirComoLaura(tester);
+    await tocarTexto(tester, 'Mis pedidos');
+    await tocarTexto(tester, 'Historial');
+    await tocarTexto(tester, 'Pedido #${pedido.numero}');
+    await tocarTexto(tester, '¿Problema con tu pedido? Escríbenos');
+
+    expect(find.text('¿Qué pasó?'), findsOneWidget);
+    // Motivos de un pedido entregado, no los de uno en curso.
+    expect(find.text('Mi pedido no ha llegado'), findsNothing);
+    await tocarTexto(tester, 'Faltó un producto');
+
+    expect(find.text('¿Qué producto? Puedes marcar varios.'), findsOneWidget);
+    await tocarTexto(tester, 'Continuar'); // sin marcar nada no avanza
+    expect(find.text('¿Cómo lo solucionamos?'), findsNothing);
+    await tocarTexto(tester, '1 × Capuchino');
+    await tocarTexto(tester, 'Continuar');
+
+    expect(find.text('¿Cómo lo solucionamos?'), findsOneWidget);
+    await tocarTexto(tester, 'Reenviar el pedido');
+
+    expect(
+      find.text('Registramos tu reclamo #R-101. Alguien del equipo te contactará pronto.'),
+      findsOneWidget,
+    );
+    final reclamo = reclamos.abiertos.single;
+    expect(reclamo.pedidoId, pedido.id);
+    expect(reclamo.motivoId, 'falto');
+    expect(reclamo.detalleIds, ['d${pedido.numero}-capuchino']);
+    expect(reclamo.solucion, SolucionReclamo.reenviar);
+
+    await tocarTexto(tester, 'Volver al pedido');
+    expect(find.text('Pedido entregado'), findsOneWidget);
+  });
+
+  testWidgets('Reclamo de un pedido en curso desde el seguimiento (22 → 22b)', (tester) async {
+    final pedido = await pedidoDeLaura();
+    await abrirComoLaura(tester);
+    await tocarTexto(tester, 'Mis pedidos');
+    await tocarTexto(tester, 'Pedido #${pedido.numero}');
+    await tocar(tester, find.textContaining('Escríbenos', findRichText: true));
+
+    expect(find.text('Faltó un producto'), findsNothing);
+    await tocarTexto(tester, 'Mi pedido no ha llegado');
+    // Este motivo no pide producto ni solución: se registra de una vez.
+    expect(find.textContaining('Registramos tu reclamo #R-101'), findsOneWidget);
+    expect(reclamos.abiertos.single.motivoId, 'no-llega');
+    expect(reclamos.abiertos.single.detalleIds, isEmpty);
+  });
+
+  testWidgets('Un pedido cancelado no muestra el link de reclamos', (tester) async {
+    final pedido = await pedidoDeLaura();
+    await pedidos.cancelar(pedido.id);
+    await abrirComoLaura(tester);
+    await tocarTexto(tester, 'Mis pedidos');
+    await tocarTexto(tester, 'Historial');
+    await tocarTexto(tester, 'Pedido #${pedido.numero}');
+    expect(find.text('Pedido cancelado'), findsOneWidget);
+    expect(find.textContaining('Escríbenos', findRichText: true), findsNothing);
   });
 }

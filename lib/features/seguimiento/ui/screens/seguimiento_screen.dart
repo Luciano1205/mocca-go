@@ -9,13 +9,16 @@ import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 import 'package:mocca_go/features/seguimiento/ui/bloc/seguimiento_bloc.dart';
 import 'package:mocca_go/features/seguimiento/ui/bloc/seguimiento_event.dart';
 import 'package:mocca_go/features/seguimiento/ui/bloc/seguimiento_state.dart';
+import 'package:mocca_go/features/seguimiento/ui/widgets/calificacion_domiciliario.dart';
 import 'package:mocca_go/features/seguimiento/ui/widgets/domiciliario_card.dart';
 import 'package:mocca_go/features/seguimiento/ui/widgets/linea_tiempo.dart';
+import 'package:mocca_go/features/seguimiento/ui/widgets/reclamo_link.dart';
 import 'package:mocca_go/theme/app_theme.dart';
 import 'package:mocca_go/utils/formato.dart';
 
-/// 11 · Seguimiento: estado, línea de tiempo y domiciliario cuando lo
-/// acepta. Mientras siga pendiente se puede cancelar (11c).
+/// 11 · Seguimiento en tiempo real: estado, línea de tiempo y domiciliario
+/// cuando lo acepta (11b). Mientras siga pendiente se puede cancelar (11c).
+/// Al entregarse pide calificar al domiciliario (12).
 class SeguimientoScreen extends StatelessWidget {
   const SeguimientoScreen({super.key});
 
@@ -40,7 +43,7 @@ class SeguimientoScreen extends StatelessWidget {
   }
 
   Future<void> _recargar(BuildContext context) async {
-    final bloc = context.read<SeguimientoBloc>()..add(SeguimientoRequested());
+    final bloc = context.read<SeguimientoBloc>()..add(SeguimientoStarted());
     await bloc.stream.firstWhere((s) => s.status != SeguimientoStatus.loading);
   }
 
@@ -74,10 +77,14 @@ class SeguimientoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SeguimientoBloc, SeguimientoState>(
+    return BlocConsumer<SeguimientoBloc, SeguimientoState>(
+      listenWhen: (antes, ahora) => ahora.pedirCalificacion,
+      listener: (context, state) => CalificacionDomiciliario.calificar(context, state.pedido),
       builder: (context, state) {
         final pedido = state.pedido;
         final pendiente = pedido.estado == EstadoPedido.pendiente;
+        final entregado =
+            pedido.estado == EstadoPedido.entregado && pedido.domiciliarioNombre != null;
         return Scaffold(
           body: SafeArea(
             child: RefreshIndicator(
@@ -101,6 +108,10 @@ class SeguimientoScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                   ] else ...[
+                    if (entregado) ...[
+                      CalificacionDomiciliario(state: state),
+                      const SizedBox(height: 14),
+                    ],
                     LineaTiempo(pedido: pedido),
                     const SizedBox(height: 14),
                     DomiciliarioCard(pedido: pedido),
@@ -109,6 +120,10 @@ class SeguimientoScreen extends StatelessWidget {
                   EntregaCard(pedido: pedido),
                   const SizedBox(height: 14),
                   ProductosCard(pedido: pedido, etiquetaTotal: 'Total'),
+                  if (pedido.estado != EstadoPedido.cancelado) ...[
+                    const SizedBox(height: 8),
+                    ReclamoLink(pedido: pedido),
+                  ],
                 ],
               ),
             ),

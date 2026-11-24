@@ -2,32 +2,51 @@ import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 
 enum MisPedidosStatus { initial, loading, success, failure }
 
-/// Estado de Mis pedidos: pestaña elegida y sus pedidos.
+/// Estado de Mis pedidos: las dos listas en tiempo real y la pestaña elegida.
 class MisPedidosState {
   final MisPedidosStatus status;
   final bool activos;
-  final List<Pedido> pedidos;
+
+  /// null hasta que llega la primera emisión de cada Stream.
+  final List<Pedido>? pedidosActivos;
+  final List<Pedido>? pedidosHistorial;
   final String? errorMessage;
+
+  /// Pedido que el domiciliario acaba de aceptar, sacar a entregar o
+  /// entregar, para la notificación (11b). Solo viene en esa emisión.
+  final Pedido? cambio;
 
   const MisPedidosState({
     this.status = MisPedidosStatus.initial,
     this.activos = true,
-    this.pedidos = const [],
+    this.pedidosActivos,
+    this.pedidosHistorial,
     this.errorMessage,
+    this.cambio,
   });
 
-  /// [errorMessage] no se arrastra: si no se pasa, queda vacío.
+  /// La lista de la pestaña elegida.
+  List<Pedido> get pedidos => (activos ? pedidosActivos : pedidosHistorial) ?? const [];
+
+  /// La pestaña elegida todavía no recibe su primera lista.
+  bool get cargando => (activos ? pedidosActivos : pedidosHistorial) == null;
+
+  /// [errorMessage] y [cambio] no se arrastran: si no se pasan, quedan vacíos.
   MisPedidosState copyWith({
     MisPedidosStatus? status,
     bool? activos,
-    List<Pedido>? pedidos,
+    List<Pedido>? pedidosActivos,
+    List<Pedido>? pedidosHistorial,
     String? errorMessage,
+    Pedido? cambio,
   }) {
     return MisPedidosState(
       status: status ?? this.status,
       activos: activos ?? this.activos,
-      pedidos: pedidos ?? this.pedidos,
+      pedidosActivos: pedidosActivos ?? this.pedidosActivos,
+      pedidosHistorial: pedidosHistorial ?? this.pedidosHistorial,
       errorMessage: errorMessage,
+      cambio: cambio,
     );
   }
 }
