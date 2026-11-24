@@ -22,7 +22,7 @@ class MenuPage extends StatelessWidget {
   const MenuPage({super.key, required this.nombre});
 
   Future<void> _recargar(BuildContext context) async {
-    final bloc = context.read<MenuBloc>()..add(MenuRequested());
+    final bloc = context.read<MenuBloc>()..add(MenuStarted());
     await bloc.stream.firstWhere((s) => s.status != MenuStatus.loading);
   }
 

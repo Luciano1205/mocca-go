@@ -11,20 +11,21 @@ import 'package:mocca_go/features/pedidos/domain/entities/pedido.dart';
 import 'package:mocca_go/routes/app_routes.dart';
 import 'package:mocca_go/theme/app_theme.dart';
 
-/// Pestaña "Mis pedidos" del cliente (10 · Activos, 10b · Historial).
-/// Los activos abren 11 · Seguimiento; los del historial, 11d / 11e · Detalle.
+/// Pestaña "Mis pedidos" del cliente (10 · Activos, 10b · Historial), en
+/// tiempo real. Los activos abren 11 · Seguimiento; los del historial,
+/// 11d / 11e · Detalle.
 class MisPedidosPage extends StatelessWidget {
   const MisPedidosPage({super.key});
 
-  Future<void> _abrir(BuildContext context, Pedido pedido) async {
+  void _abrir(BuildContext context, Pedido pedido) {
     final ruta = pedido.estado.activo ? AppRoutes.seguimiento : AppRoutes.detalleMiPedido;
-    await Navigator.pushNamed(context, ruta, arguments: pedido);
-    // Al volver el pedido pudo cambiar (lo tomaron, lo cancelé...).
-    if (context.mounted) context.read<MisPedidosBloc>().add(MisPedidosRequested());
+    // Al volver no hace falta recargar: el Stream ya trae el cambio.
+    Navigator.pushNamed(context, ruta, arguments: pedido);
   }
 
+  /// Deslizar vuelve a abrir las suscripciones, por si se cayó la conexión.
   Future<void> _recargar(BuildContext context) async {
-    final bloc = context.read<MisPedidosBloc>()..add(MisPedidosRequested());
+    final bloc = context.read<MisPedidosBloc>()..add(MisPedidosStarted());
     await bloc.stream.firstWhere((s) => s.status != MisPedidosStatus.loading);
   }
 
@@ -32,8 +33,7 @@ class MisPedidosPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<MisPedidosBloc, MisPedidosState>(
       builder: (context, state) {
-        final cargando =
-            state.status == MisPedidosStatus.loading || state.status == MisPedidosStatus.initial;
+        final cargando = state.cargando && state.status != MisPedidosStatus.failure;
         return RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () => _recargar(context),
@@ -60,7 +60,7 @@ class MisPedidosPage extends StatelessWidget {
                   padding: EdgeInsets.only(top: 80),
                   child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
                 )
-              else if (state.pedidos.isEmpty && state.status == MisPedidosStatus.success)
+              else if (state.pedidos.isEmpty && !state.cargando)
                 Padding(
                   padding: const EdgeInsets.only(top: 80),
                   child: state.activos
@@ -112,7 +112,7 @@ class _Pestana extends StatelessWidget {
       ),
       onSelected: (_) {
         if (!activa) {
-          context.read<MisPedidosBloc>().add(MisPedidosRequested(activos: activos));
+          context.read<MisPedidosBloc>().add(MisPedidosTabChanged(activos));
         }
       },
     );
